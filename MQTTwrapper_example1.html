@@ -169,7 +169,7 @@
         //     2: E.nnn              (UNIX epoch time with 3 decimal points)
         //     3: value #1 (A, real-number, -10<A<10)
         //     4: value #2 (B, real-number, -10<B<10)
-        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +-?\d(\.\d+)? +-?\d(\.\d+)?$/)) {return;}
+        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +-?\d+(\.\d+)? +-?\d+(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[2]*1});
         oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[3]*1});
@@ -180,7 +180,7 @@
         //     1: "plot" keyword
         //     2: value #1 (A, real-number, -10<A<10)
         //     3: value #2 (B, real-number, -10<B<10)
-        if (! sInData.match(/^plot +-?\d(\.\d+)? +-?\d(\.\d+)?$/)) {return;}
+        if (! sInData.match(/^plot +-?\d+(\.\d+)? +-?\d+(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[1]*1});
         oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[2]*1});
