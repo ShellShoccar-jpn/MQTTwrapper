@@ -226,6 +226,6 @@ See the reference section for detail.
             This property is a readonly one.
 ```
 
-## LICENSE:
+## LICENSE
 
 This is a public-domain software (CC0). It means that all of the people can use this for any purposes with no restrictions at all. By the way, We are fed up with the side effects which are brought about by the major licenses.
