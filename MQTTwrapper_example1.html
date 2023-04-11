@@ -222,7 +222,8 @@
     }
     
     function Disconnect() {
-      if (! oMQTTw) { return; }
+      if (! oMQTTw           ) {return             ;}
+      if (  oMQTTw.bConnected) {oMQTTw.disconnect();}
       oMQTTw.disconnect();
       eProt.item(1-eProt.selectedIndex).disabled = false;
       eAddr.readOnly                             = false;
