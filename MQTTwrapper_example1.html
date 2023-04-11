@@ -5,7 +5,7 @@
 # MQTTwrapper_example1.html:
 #   An Example to Try the MQTTwrapper Class (with a Chart)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-11
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-12
 #
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -23,8 +23,9 @@
   <script type="text/javascript">
     let sLibname  = load_mqttwrapper({'MQTTjs':'https://unpkg.com/mqtt/dist/mqtt.min.js'                               ,
                                       'Paho'  :'https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js'});
-    const oPreset = { 'HiveMQ1': {'prot':0, 'host':'broker.hivemq.com'       , 'port':8000, 'path':'mqtt', 'topic':'test/#'     },
-                      'HiveMQ2': {'prot':0, 'host':'broker.mqttdashboard.com', 'port':8000, 'path':'mqtt', 'topic':'testtopic/#'} };
+    const oPreset = { 'HiveMQ1': {'prot':0, 'host':'broker.hivemq.com'       , 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
+                      'HiveMQ2': {'prot':1, 'host':'broker.hivemq.com'       , 'port':8884, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
+                      'HiveMQ3': {'prot':0, 'host':'broker.mqttdashboard.com', 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'} };
   </script>
   <!-- for chartjs-plugin-streaming -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.3.2"></script>
@@ -44,8 +45,9 @@
       <dt>URL:</dt>
       <dd>
         <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="11883" size="5" />/<input type="text" id="path" value="" size="20" /><br/>
-        <label style="font-size:smaller"><input type="button" id="hivemqurl" value="preset1" onclick="Preset('HiveMQ1')" /> for the HiveMQ Public broker</label><br/>
-        <label style="font-size:smaller"><input type="button" id="hivemqurl" value="preset2" onclick="Preset('HiveMQ2')" /> for the HiveMQ <a href="http://www.hivemq.com/demos/websocket-client/">MQTT Browser Client</a></label>
+        <label style="font-size:smaller"><input type="button" value="preset1" onclick="Preset('HiveMQ1')" /> for the HiveMQ Public broker</label><br/>
+        <label style="font-size:smaller"><input type="button" value="preset2" onclick="Preset('HiveMQ2')" /> for the HiveMQ Public broker (TLS)</label><br/>
+        <label style="font-size:smaller"><input type="button" value="preset3" onclick="Preset('HiveMQ3')" /> for the HiveMQ <a href="http://www.hivemq.com/demos/websocket-client/">MQTT Browser Client</a></label>
       </dd>
     </dl>
     <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
@@ -286,7 +288,8 @@
         eAddr.value         = oPreset[sProf].host ;
         ePort.value         = oPreset[sProf].port ;
         ePath.value         = oPreset[sProf].path ;
-        eRecvtopic.value    = oPreset[sProf].topic;
+        eSendtopic.value    = oPreset[sProf].pubtopic;
+        eRecvtopic.value    = oPreset[sProf].subtopic;
       }
     }
   </script>

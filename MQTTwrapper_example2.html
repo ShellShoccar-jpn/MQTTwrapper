@@ -5,7 +5,7 @@
 # MQTTwrapper_example2.html:
 #   An Example to Try the MQTTwrapper Class (with a Map)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-11
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-12
 #
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -14,6 +14,38 @@
 # about by the major licenses.
 #
 ######################################################################
+
+
+<<SAMPLE COORDINATE DATA SET>>
+
+If you do not have any sample coordinate data set, try this one.
+Type the following one-liner command on your UNIX terminal while
+subscribing to "testtopic/train" via "ws://broker.hivemq.com:8000/mqtt."
+
+$ cat <<TRAIN |
+plot 35.681382 139.766084 東京 (Tokyo)
+plot 35.713768 139.777254 上野 (Ueno)
+plot 35.906295 139.623999 大宮 (Omiya)
+plot 36.139702 139.389942 熊谷 (Kumagaya)
+plot 36.218575 139.179739 本庄早稲田 (Honjo Waseda)
+plot 36.322356 139.013057 高崎 (Takasaki)
+plot 36.362408 138.849589 安中榛名 (Annaka Haruna)
+plot 36.34255 138.635062 軽井沢 (Karuizawa)
+plot 36.277898 138.464339 佐久平 (Sakudaira)
+plot 36.396498 138.249736 上田 (Ueda)
+plot 36.643 138.188686 長野 (Nagano)
+plot 36.847975 138.359663 飯山 (Iiyama)
+plot 37.081813 138.249476 上越妙高 (Joetsu Myoko)
+plot 37.043647 137.861327 糸魚川 (Itoigawa)
+plot 36.8742374 137.4814155 黒部宇奈月温泉 (Kurobe Unazuki Onsen)
+plot 36.701226 137.21319 富山 (Toyama)
+plot 36.727004 137.010459 新高岡 (Shin Takaoka)
+plot 36.578273 136.647763 金沢 (Kanazawa)
+TRAIN
+while read line; do sleep 1; echo "$line"; done |
+mosquitto_pub -l -t testtopic/train -h broker.hivemq.com
+$
+
 -->
 <html>
 <head>
@@ -23,8 +55,9 @@
   <script type="text/javascript">
     let sLibname  = load_mqttwrapper({'MQTTjs':'https://unpkg.com/mqtt/dist/mqtt.min.js'                               ,
                                       'Paho'  :'https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js'});
-    const oPreset = { 'HiveMQ1': {'prot':0, 'host':'broker.hivemq.com'       , 'port':8000, 'path':'mqtt', 'topic':'test/#'     },
-                      'HiveMQ2': {'prot':0, 'host':'broker.mqttdashboard.com', 'port':8000, 'path':'mqtt', 'topic':'testtopic/#'} };
+    const oPreset = { 'HiveMQ1': {'prot':0, 'host':'broker.hivemq.com'       , 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
+                      'HiveMQ2': {'prot':1, 'host':'broker.hivemq.com'       , 'port':8884, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
+                      'HiveMQ3': {'prot':0, 'host':'broker.mqttdashboard.com', 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'} };
   </script>
   <!--  for OpenStreetMap+Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
@@ -42,8 +75,9 @@
       <dt>URL:</dt>
       <dd>
         <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="11883" size="5" />/<input type="text" id="path" value="" size="20" /><br/>
-        <label style="font-size:smaller"><input type="button" id="hivemqurl" value="preset1" onclick="Preset('HiveMQ1')" /> for the HiveMQ Public broker</label><br/>
-        <label style="font-size:smaller"><input type="button" id="hivemqurl" value="preset2" onclick="Preset('HiveMQ2')" /> for the HiveMQ <a href="http://www.hivemq.com/demos/websocket-client/">MQTT Browser Client</a></label>
+        <label style="font-size:smaller"><input type="button" value="preset1" onclick="Preset('HiveMQ1')" /> for the HiveMQ Public broker</label><br/>
+        <label style="font-size:smaller"><input type="button" value="preset1" onclick="Preset('HiveMQ2')" /> for the HiveMQ Public broker (TLS)</label><br/>
+        <label style="font-size:smaller"><input type="button" value="preset2" onclick="Preset('HiveMQ3')" /> for the HiveMQ <a href="http://www.hivemq.com/demos/websocket-client/">MQTT Browser Client</a></label>
       </dd>
     </dl>
     <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
@@ -252,7 +286,8 @@
         eAddr.value         = oPreset[sProf].host ;
         ePort.value         = oPreset[sProf].port ;
         ePath.value         = oPreset[sProf].path ;
-        eRecvtopic.value    = oPreset[sProf].topic;
+        eSendtopic.value    = oPreset[sProf].pubtopic;
+        eRecvtopic.value    = oPreset[sProf].subtopic;
       }
     }
     
