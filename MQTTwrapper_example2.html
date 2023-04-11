@@ -16,10 +16,10 @@
 ######################################################################
 
 
-<<SAMPLE COORDINATE DATA SET>>
+<<SAMPLE COORDINATE DATA SETS>>
 
 If you do not have any sample coordinate data set, try this one.
-Type the following one-liner command on your UNIX terminal while
+Type the following one-liner commands on your UNIX terminal while
 subscribing to "testtopic/train" via "ws://broker.hivemq.com:8000/mqtt."
 
 $ cat <<TRAIN |
@@ -39,8 +39,79 @@ plot 37.081813 138.249476 上越妙高 (Joetsu Myoko)
 plot 37.043647 137.861327 糸魚川 (Itoigawa)
 plot 36.8742374 137.4814155 黒部宇奈月温泉 (Kurobe Unazuki Onsen)
 plot 36.701226 137.21319 富山 (Toyama)
-plot 36.727004 137.010459 新高岡 (Shin Takaoka)
+plot 36.727004 137.010459 新高岡 (Shin-Takaoka)
 plot 36.578273 136.647763 金沢 (Kanazawa)
+TRAIN
+while read line; do sleep 1; echo "$line"; done |
+mosquitto_pub -l -t testtopic/train -h broker.hivemq.com
+$
+
+$ cat <<TRAIN |
+plot 35.612858 140.11434 千葉 (Chiba)
+plot 35.622581 140.103279 西千葉 (Nichi-Chiba)
+plot 35.637425 140.092404 稲毛 (Inage)
+plot 35.651828 140.072961 新検見川 (Shin-Kemigawa)
+plot 35.659386 140.057949 幕張 (Makuhari)
+plot 35.672795 140.042241 幕張本郷 (Makuhari Hongo)
+plot 35.691228 140.020476 津田沼 (Tsudanuma)
+plot 35.699813 140.004272 東船橋 (Higashi-Funabashi)
+plot 35.701735 139.985218 船橋 (Funabashi)
+plot 35.707452 139.959097 西船橋 (Nishi-Funabashi)
+plot 35.714276 139.943092 下総中山 (Shimousa Nakayama)
+plot 35.72277744925465 139.92651444626975 本八幡 (Moto Yawata)
+plot 35.729277 139.907809 市川 (Ichikawa)
+plot 35.732962 139.881682 小岩 (Koiwa)
+plot 35.716789 139.85828 新小岩 (Shin-Koiwa)
+plot 35.706434 139.842516 平井 (Hirai)
+plot 35.697587 139.826078 亀戸 (Kameido)
+plot 35.696437 139.813949 錦糸町 (Kinshicho)
+plot 35.69661867521563 139.79736660607162 両国 (Ryogoku)
+plot 35.69745238672908 139.78636969579387 浅草橋 (Asakusabashi)
+plot 35.698683 139.774219 秋葉原 (Akihabara)
+plot 35.699855 139.763786 御茶ノ水 (Ochanomizu)
+plot 35.70203 139.753653 水道橋 (Suidobashi)
+plot 35.702065 139.745015 飯田橋 (Iidabashi)
+plot 35.691210732070374 139.73649022635075 市ケ谷 (Ichigaya)
+plot 35.686014 139.730667 四ツ谷 (Yotsuya)
+plot 35.68009 139.720243 信濃町 (Shinanomachi)
+plot 35.681231 139.711644 千駄ケ谷 (Sendagaya)
+plot 35.683043838270954 139.7020716435509 代々木 (Yoyogi)
+plot 35.68844644213138 139.69860159326348 新宿 (Shinjuku)
+plot 35.700722 139.697358 大久保 (Okubo)
+plot 35.70612169723491 139.68379064463082 東中野 (Higashi-Nakano)
+plot 35.706032 139.665652 中野 (Nakako)
+plot 35.705385 139.649867 高円寺 (Koenji)
+plot 35.704818 139.635868 阿佐ケ谷 (Asagaya)
+plot 35.704632 139.619981 荻窪 (Ogikubo)
+plot 35.703842 139.599361 西荻窪 (Nishi-Ogikubo)
+plot 35.70211210025202 139.58045257022607 吉祥寺 (Kichijoji)
+plot 35.702708 139.560831 三鷹 (Mitaka)
+TRAIN
+while read line; do sleep 1; echo "$line"; done |
+mosquitto_pub -l -t testtopic/train -h broker.hivemq.com
+$
+
+$ cat <<TRAIN |
+plot 35.586859 139.705942 西馬込 (Nishi-Magome)
+plot 35.596435 139.711772 馬込 (Magome)
+plot 35.605479 139.713679 中延 (Nakanobu)
+plot 35.614719 139.716398 戸越 (Togoshi)
+plot 35.626446 139.723444 五反田 (Gotanda)
+plot 35.631679 139.730305 高輪台 (Takanawadai)
+plot 35.638692 139.74002 泉岳寺 (Sengakuji)
+plot 35.64818 139.748775 三田 (Mita)
+plot 35.65689054861274 139.75469940807673 大門 (Daimon)
+plot 35.665498 139.75964 新橋 (Shimbashi)
+plot 35.669464 139.767253 東銀座 (Higashi-Ginza)
+plot 35.675461 139.771767 宝町 (Takaracho)
+plot 35.682413 139.773919 日本橋 (Nihombashi)
+plot 35.686307 139.782285 人形町 (Ningyocho)
+plot 35.692126 139.784821 東日本橋 (Higashi-Nihombashi)
+plot 35.69745238672908 139.78636969579387 浅草橋 (Asakusabashi)
+plot 35.705462557062255 139.7925091045909 蔵前 (Kuramae)
+plot 35.712074 139.79843 浅草 (Asakusa)
+plot 35.70858 139.804624 本所吾妻橋 (Honjo Azumabashi)
+plot 35.710702 139.812935 押上 (Oshiage)
 TRAIN
 while read line; do sleep 1; echo "$line"; done |
 mosquitto_pub -l -t testtopic/train -h broker.hivemq.com
