@@ -75,7 +75,7 @@
   <p>
     Data will be plotted on the chart when the above subscriber receives it if the data is formatted like the following.
   </p>
-  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">prot <i>n</i>1 <i>n</i>2</blockquote>
+  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">plot <i>n</i>1 <i>n</i>2</blockquote>
   <dl>
     <dt><i>n</i>1</dt><dd>for Dataset A (real-number, -10&lt;;<i>n</i>1&lt;;10)</dd>
     <dt><i>n</i>2</dt><dd>for Dataset B (real-number, -10&lt;;<i>n</i>2&lt;;10)</dd>
@@ -154,7 +154,7 @@
     // the data format assumed the following:
     //   * space-separated-data
     //   * three columns
-    //     1: "prot" keyword
+    //     1: "plot" keyword
     //     2: value #1 (x, -10<=x<=10)
     //     3: value #2 (y, -10<=x<=10)
     function parsinjector(sInData) {
@@ -177,10 +177,10 @@
       if (iFieldType === 2) {
         //   * three-column-type
         //   * three columns
-        //     1: "prot" keyword
+        //     1: "plot" keyword
         //     2: value #1 (A, real-number, -10<=A<=10)
         //     3: value #2 (B, real-number, -10<=B<=10)
-        if (! sInData.match(/^prot +-?\d(\.\d+)? +-?\d(\.\d+)?$/)) {return;}
+        if (! sInData.match(/^plot +-?\d(\.\d+)? +-?\d(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[1]*1});
         oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[2]*1});
