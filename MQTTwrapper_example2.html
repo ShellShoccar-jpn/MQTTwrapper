@@ -167,10 +167,10 @@ $
                       'HiveMQ2': {'prot':1, 'host':'broker.hivemq.com'       , 'port':8884, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
                       'HiveMQ3': {'prot':0, 'host':'broker.mqttdashboard.com', 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'} };
   </script>
-  <!--  for OpenStreetMap+Leaflet -->
+  <!--  for Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
-  <!-- /for OpenStreetMap+Leaflet -->
+  <!-- /for Leaflet -->
 </head>
 
 <body>
@@ -259,10 +259,17 @@ $
     let oLine;
     let oFgrp = L.featureGroup();
     let oMap = L.map('map').setView([35.6889101,139.748428], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                {attribution: 'c <a href="https://osm.org/copyright">OpenStreetMap</a> contributors, <a href="//creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'})
-     .addTo(oMap);
-    
+    if (true) {
+      // --- Google Map ---
+      L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
+                  {attribution: '<a href="https://developers.google.com/maps/documentation" target="_blank">Google Map</a>'})
+       .addTo(oMap);
+    } else    {
+      // --- OpenStreetMap ---
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  {attribution: 'c <a href="https://osm.org/copyright">OpenStreetMap</a> contributors, <a href="//creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'})
+       .addTo(oMap);
+    }
     // Parse and inject the incoming data into the chart
     // the data format assumed the following:
     //   * space-separated-data
