@@ -155,8 +155,8 @@
     //   * space-separated-data
     //   * three columns
     //     1: "plot" keyword
-    //     2: value #1 (x, -10<=x<=10)
-    //     3: value #2 (y, -10<=x<=10)
+    //     2: value #1 (A, -10<A<10)
+    //     3: value #2 (B, -10<B<10)
     function parsinjector(sInData) {
       // Parse
       let iFieldType = 2;
@@ -167,8 +167,8 @@
         //   * four-column-type (not used now)
         //     1: YYYYMMDDhhmmss.nnn (Calendar time with 3 decimal points)
         //     2: E.nnn              (UNIX epoch time with 3 decimal points)
-        //     3: value #1 (A, real-number, -10<=A<=10)
-        //     4: value #2 (B, real-number, -10<=B<=10)
+        //     3: value #1 (A, real-number, -10<A<10)
+        //     4: value #2 (B, real-number, -10<B<10)
         if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +-?\d(\.\d+)? +-?\d(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[2]*1});
@@ -178,8 +178,8 @@
         //   * three-column-type
         //   * three columns
         //     1: "plot" keyword
-        //     2: value #1 (A, real-number, -10<=A<=10)
-        //     3: value #2 (B, real-number, -10<=B<=10)
+        //     2: value #1 (A, real-number, -10<A<10)
+        //     3: value #2 (B, real-number, -10<B<10)
         if (! sInData.match(/^plot +-?\d(\.\d+)? +-?\d(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[1]*1});
