@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-14
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-15
 //
 // ===================================================================
 //
@@ -430,8 +430,8 @@ function load_mqttwrapper(oURLs) {
                                         //   suspends the processing.
                                         //   That behavior is unfavorable for
                                         //   this class.
-                                        return that.fCBreceiver(oU8e.decode(Uint8Array.from(oMessage.payloadBytes).buffer),
-                                                                oMessage.destinationName                                   );
+                                        return that.fCBreceiver(oU8e.decode(oMessage.payloadBytes),
+                                                                oMessage.destinationName           );
                                       };
       }
       connect(fCBconnected,fCBdisconnected,fCBerror) {
