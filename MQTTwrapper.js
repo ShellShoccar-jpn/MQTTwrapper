@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-11
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-14
 //
 // ===================================================================
 //
@@ -234,7 +234,7 @@
 
 var MQTTwrapper = null;
 function load_mqttwrapper(oURLs) {
-  'use strict';
+  //'use strict'; // Can not use it yet because the current Paho code is not strict.
   let le,e,i,xhr;
   let sUrl_MQTTjs,sUrl_Paho;
 
@@ -369,9 +369,10 @@ function load_mqttwrapper(oURLs) {
     // https://lipoyang.hatenablog.com/entry/2019/03/05/110524 (example)
     MQTTwrapper = class MQTTwrapper {
       constructor(sUrl) {
-        let bSecure, sId, sPasswd, sHost, iPort, sPath, s, s1, that;
+        let bSecure, sId, sPasswd, sHost, iPort, sPath, oU8e, s, s1, that;
         //
         this.sLibname = 'Paho';
+        oU8e          = new TextDecoder("utf-8");
         //
         bSecure = (sUrl.match(/^wss:/)) ? true : false;
         s       = sUrl.replace(/^wss?:\/\//,'').replace(/\/.*$/,'');
@@ -417,7 +418,20 @@ function load_mqttwrapper(oURLs) {
                                      };
         this.oPaho.onMessageArrived = function(oMessage){
                                         if (typeof that.fCBreceiver !== 'function') {return false;}
-                                        return that.fCBreceiver(oMessage.payloadString,oMessage.destinationName);
+                                        // Note:
+                                        //   You should read the "payloadBytes"
+                                        //   (ArrayBuffer-type) instead of the
+                                        //   "payloadString" (String-type) and
+                                        //   convert it into String-type data.
+                                        //   When some bunches of binary data
+                                        //   that is not valid as UTF-8 byte
+                                        //   string arrive, and you read it with
+                                        //   the payloadString, the Paho library
+                                        //   suspends the processing.
+                                        //   That behavior is unfavorable for
+                                        //   this class.
+                                        return that.fCBreceiver(oU8e.decode(Uint8Array.from(oMessage.payloadBytes).buffer),
+                                                                oMessage.destinationName                                   );
                                       };
       }
       connect(fCBconnected,fCBdisconnected,fCBerror) {
