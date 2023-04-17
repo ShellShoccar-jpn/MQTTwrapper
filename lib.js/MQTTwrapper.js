@@ -23,6 +23,9 @@
 //       <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 //       <script src="MQTTwrapper.js"></script>
 //       -----
+//     THE <script> TAG OF THIS FILE MUST BE LATER THAN THE MQTT LIBRARY
+//     TAGS!!! Otherwise, this file will fail to wrap them.
+//
 //     If you want to specify the location URL of those libraries,
 //     specify the alternative URLs with the <script> "src" properties.
 //       -----
@@ -43,6 +46,7 @@
 //     The current names you can specify are only "MQTT.js" and "Paho."
 //     Be careful of typos in those spells. (Case sensitive)
 //     When not specified, the current default order is 1."MQTT.js" 2."Paho."
+//
 //  2) Use the "MQTTwrapper" class in your JavaScript. Here is an example.
 //       -----
 //       client = new MQTTwrapper('ws://broker.mqttdashboard.com:8000/mqtt');
