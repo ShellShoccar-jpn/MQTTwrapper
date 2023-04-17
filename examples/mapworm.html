@@ -177,7 +177,7 @@ $
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="gavial.toyokeizai-businessnext.net" size="20" />:<input type="text" id="port" value="11883" size="5" />/<input type="text" id="path" value="" size="20" /><br/>
+        <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" /><br/>
         <label style="font-size:smaller"><input type="button" value="preset1" onclick="Preset('HiveMQ1')" /> for the HiveMQ Public broker</label><br/>
         <label style="font-size:smaller"><input type="button" value="preset2" onclick="Preset('HiveMQ2')" /> for the HiveMQ Public broker (TLS)</label><br/>
         <label style="font-size:smaller"><input type="button" value="preset3" onclick="Preset('HiveMQ3')" /> for the HiveMQ <a href="http://www.hivemq.com/demos/websocket-client/">MQTT Browser Client</a></label>
@@ -430,7 +430,7 @@ $
   <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
   <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
      <textarea style="width:15em; height:3em;" readonly="readonly">listener 1883
-listener 11883
+listener 8000
 protocol websockets</textarea></p>
   <h3>1) Start MQTT broker by Mosquitto</h3>
   <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
