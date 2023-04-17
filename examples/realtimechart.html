@@ -5,7 +5,7 @@
 # realtimechart.html:
 #   An Example to Try the MQTTwrapper Class (with a Chart)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-17
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-18
 #
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -235,6 +235,7 @@
                 eRecvstart.disabled                        = false;
                 eRecvstop.disabled                         =  true;          },
         //--- callback for disconnected ------------------------------
+        Disconnect,
         Disconnect,
         //--- callback for connecting error --------------------------
         () => { eConn.value                                = 'Connect';
