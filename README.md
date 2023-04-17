@@ -47,7 +47,8 @@ if (client) {
     function(){console.log('Connected'                       );
                client.subscribe('testtopic/#'                );
                client.publish('test/channel1','Hello, world!');},
-    function(){console.log('Discnnected'                     );},
+    function(){console.log('Discnnected normally'            );},
+    function(){console.log('Discnnected suddenly'            );},
     function(){console.log('Failed to connect'               );}
   );
   client.setReceiverCallback(
@@ -86,12 +87,23 @@ See the reference section for detail.
             does not connect to the broker yet. The "connect()" method
             is to connect to it.
 * <Function> connect()
-    Usage : obj.connect([onConnected[, onDisconnected[, onFailed]]]);
+    Usage : obj.connect(
+             [onConnected[, onDisconnected[, onKilled[, onFailed]]]]
+            );
             - obj ............. Variable stocking the object instance.
             - onConnected ..... Callback function that is called when
                                 connected successfully.
             - onDisconnected .. Callback function that is called when
-                                dicconnected.
+                                dicconnected normally. When you do not
+                                omit the "onKilled," this value will
+                                be copied to it.
+            - onKilled ........ Callback function that is called when
+                                dicconnected unintentionally. In case
+                                you need to reconnect, you can use this
+                                callback as a trigger.
+                                If you do not give me a valid value,
+                                the value of the "onDisconnected" will
+                                be copied.
             - onFailed ........ Callback function that is called when
                                 failed to connect to the broker.
                                 This function accept one argument.
