@@ -16,6 +16,8 @@ This library is to make the MQTT libraries "MQTT.js" and "Paho" more robust. If 
 <script src="MQTTwrapper.js"></script>
 ```
 
+THE <script> TAG OF THIS FILE MUST BE LATER than the MQTT LIBRARY TAGS!!! Otherwise, this file will fail to wrap them.
+
 If you want to specify the location URL of those libraries, specify the alternative URLs with the <script> "src" properties.
 
 ```HTML:example2
