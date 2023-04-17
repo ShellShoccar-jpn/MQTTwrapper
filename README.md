@@ -58,36 +58,23 @@ if (client) {
 
 See the reference section for detail.
 
-## REFERENCE #1 (Direct Functions of This Library)
+## REFERENCE ("MQTTwrapper" Class)
 
 ```
-* <Function> load_mqttwrapper()
-    Usage : str = load_mqttwrapper([urlobj]);
-            - str ..... String type variable to know which library
-                        has been loaded.
-            - urlobj .. Object to specify the URL of each librarie.
-                        If you want to have me load the library from
-                        your place instead of the default place,
-                        give me the following object.
-                          {
-                            'MQTTjs' : '<URL for your MQTT.js file>',
-                            'Paho'   : '<URL for your Paho file>'   ,
-                          }
-                        Be careful not to spell "MQTT.js." The correct
-                        name in this object is "MQTTjs" (w/o period).
-                        You can specify both of them or one of them.
+* <Property,static> sLibname
+    Usage : str = MQTTerapper.sLibname;
+            - str ........ String variable to know which library
+                           is wrapped.
     Return: At this version, this property returns one of the following
             names.
             - "MQTT.js" .. When this class wraps the MQTT.js.
             - "Paho" ..... When this class wraps the Eclipse Paho.
-            - "" ......... When failed to load both of them.
-    Desc. : You have to call this at first before creating an instance
-            of the following wrapper class.
-```
-
-## REFERENCE #2 ("MQTTwrapper" Class)
-
-```
+    Desc. : You can know which library is wrapped this time by
+            reading this property. But note that we may change the
+            word or spell of the name in the future. So the behavior
+            of your program should not strictly depend on the strict
+            spell.
+            This property is a readonly one.
 * <Function> constructor()
     Usage : obj = new MQTTwrapper(url);
             - obj ... Variable to stock an object instance.
@@ -220,21 +207,6 @@ See the reference section for detail.
             broker is alive or not by reading the property.
             This property MUST BE a readonly one. So you MUST NOT
             write the new status into it.
-* <Property> sLibname
-    Usage : str = obj.sLibname;
-            - str ........ String variable to know which library
-                           is wrapped.
-            - obj ........ Variable stocking the object instance.
-    Return: At this version, this property returns one of the following
-            names.
-            - "MQTT.js" .. When this class wraps the MQTT.js.
-            - "Paho" ..... When this class wraps the Eclipse Paho.
-    Desc. : You can know which library is wrapped this time by
-            reading this property. But note that we may change the
-            word or spell of the name in the future. So the behavior
-            of your program should not strictly depend on the strict
-            spell.
-            This property is a readonly one.
 ```
 
 ## LICENSE
