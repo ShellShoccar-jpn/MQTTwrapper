@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-17
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-18
 //
 // ===================================================================
 //
@@ -55,7 +55,8 @@
 //           function(){console.log('Connected'                       );
 //                      client.subscribe('testtopic/#'                );
 //                      client.publish('test/channel1','Hello, world!');},
-//           function(){console.log('Discnnected'                     );},
+//           function(){console.log('Discnnected normally'            );},
+//           function(){console.log('Discnnected abnomally'           );},
 //           function(){console.log('Failed to connect'               );}
 //         );
 //         client.setReceiverCallback(
@@ -91,12 +92,23 @@
 //              does not connect to the broker yet. The "connect()" method
 //              is to connect to it.
 //  * <Function> connect()
-//      Usage : obj.connect([onConnected[, onDisconnected[, onFailed]]]);
+//      Usage : obj.connect(
+//               [onConnected[, onDisconnected[, onKilled[, onFailed]]]]
+//              );
 //              - obj ............. Variable stocking the object instance.
 //              - onConnected ..... Callback function that is called when
 //                                  connected successfully.
 //              - onDisconnected .. Callback function that is called when
-//                                  dicconnected.
+//                                  dicconnected normally. When you do not
+//                                  omit the "onKilled," this value will
+//                                  be copied to it.
+//              - onKilled ........ Callback function that is called when
+//                                  dicconnected unintentionally. In case
+//                                  you need to reconnect, you can use this
+//                                  callback as a trigger.
+//                                  If you do not give me a valid value,
+//                                  the value of the "onDisconnected" will
+//                                  be copied.
 //              - onFailed ........ Callback function that is called when
 //                                  failed to connect to the broker.
 //                                  This function accept one argument.
@@ -263,42 +275,50 @@ var MQTTwrapper = null;
     return class MQTTwrapper {
       static sLibname = 'MQTT.js';
       constructor(sUrl) {
-        //
-        this
-        //
         if (typeof sUrl !== 'string') {return null;}
         this.sUrl       = sUrl ;
         this.bConnected = false;
         this.oClient    = null ;
+        this.bShutting  = false;
       }
-      connect(fCBconnected,fCBdisconnected,fCBerror) {
+      connect(fCBconnected,fCBdisconnected,fCBkilled,fCBerror) {
         let that = this;
-        this.fCBconnected    = (typeof fCBconnected    === 'function') ? fCBconnected    : null;
-        this.fCBdisconnected = (typeof fCBdisconnected === 'function') ? fCBdisconnected : null;
-        this.fCBerror        = (typeof fCBerror        === 'function') ? fCBerror        : null;
+        this.bShutting       = false                                                                           ;
+        this.fCBconnected    = (typeof fCBconnected    === 'function') ? fCBconnected    : null                ;
+        this.fCBdisconnected = (typeof fCBdisconnected === 'function') ? fCBdisconnected : null                ;
+        this.fCBkilled       = (typeof fCBkilled       === 'function') ? fCBkilled       : this.fCBdisconnected;
+        this.fCBerror        = (typeof fCBerror        === 'function') ? fCBerror        : null                ;
         this.fCBreceiver     =                                             null;
         //
-        this.oClient = mqtt.connect(this.sUrl);
+        this.oClient = mqtt.connect(this.sUrl,{"reconnectPeriod":0});
+          // Disable reconnection for compatibility with other libraries
         if (! this.oClient) { console.error('MQTT.js: Failed to connect'); return; };
         //
         this.oClient.on('connect', (oConnack) => {
-          console.log('MQTTwrapper: MQTT.js: connected');
           if (typeof oConnack === 'undefined') {return;}
-          that.bConnected = true;
+          console.log('MQTTwrapper: MQTT.js: connected');
+          that.bConnected = true ;
           if (typeof that.fCBconnected !== 'function') {return false;}
           return that.fCBconnected();
         });
-       //
+        //
         this.oClient.on('close', () => {
-          console.log('MQTTwrapper: MQTT.js: dicconnected');
-          if (that.bConnected) {that.bConnected=false;}
-          else                 {that.oClient.end();  } // Maybe connection error
-          if (typeof that.fCBdisconnected !== 'function') {return false;}
-          return that.fCBdisconnected();
+          that.bConnected = false;
+          if (that.bShutting) {
+            that.bShutting  = false;
+            console.log('MQTTwrapper: MQTT.js: dicconnected normally');
+            if (typeof that.fCBdisconnected !== 'function') {return false;}
+            return that.fCBdisconnected();
+          } else              {
+            console.log('MQTTwrapper: MQTT.js: dicconnected unintentionally');
+            if (typeof that.fCBkilled       !== 'function') {return false;}
+            return that.fCBkilled();
+          }
         });
         //
         this.oClient.on('error', (error) => {
           if (typeof error === 'undefined') {return;}
+          that.bShutting = false;
           console.log('MQTTwrapper: MQTT.js: connection error: '+e.message);
           if (typeof that.fCBerror !== 'function') {return false;}
           return that.fCBerror(error+'');
@@ -312,6 +332,7 @@ var MQTTwrapper = null;
       }
       disconnect() {
         if (! this.oClient) {return;}
+        this.bShutting = true;
         this.oClient.end();
       }
       publish(sTopic,sMessage) {
@@ -362,7 +383,7 @@ var MQTTwrapper = null;
       constructor(sUrl) {
         let bSecure, sId, sPasswd, sHost, iPort, sPath, oU8e, s, s1, that;
         //
-        oU8e          = new TextDecoder("utf-8");
+        oU8e    = new TextDecoder("utf-8");
         //
         bSecure = (sUrl.match(/^wss:/)) ? true : false;
         s       = sUrl.replace(/^wss?:\/\//,'').replace(/\/.*$/,'');
@@ -379,25 +400,33 @@ var MQTTwrapper = null;
         //
         this.oPaho = new Paho.MQTT.Client(sHost, iPort, sPath, 'web_'+parseInt(Math.random()*100,10));
         if (! this.oPaho) {return null;}
-        this.bSecure                = bSecure     ;
-        this.sId                    = sId         ;
-        this.sPasswd                = sPasswd     ;
-        this.fCBreceiver            = null        ;
-        this.bConnected             = false       ;
-        this.fCBconnected           = null        ;
-        that                        = this        ;
+        this.bSecure                = bSecure;
+        this.sId                    = sId    ;
+        this.sPasswd                = sPasswd;
+        this.fCBreceiver            = null   ;
+        this.bConnected             = false  ;
+        this.bShutting              = false  ;
+        this.fCBconnected           = null   ;
+        that                        = this   ;
         this.fSucessHook            = function(){
                                         console.log('MQTTwrapper: Paho: connected');
                                         that.bConnected = true;
                                         if (typeof that.fCBconnected !== 'function') {return false;}
                                         return that.fCBconnected();
                                      };
-        this.fCBdisconnected        = null        ;
+        this.fCBdisconnected        = null;
         this.oPaho.onConnectionLost = function(){
-                                        console.log('MQTTwrapper: Paho: disconnected');
                                         that.bConnected = false;
-                                        if (typeof that.fCBdisconnected !== 'function') {return false;}
-                                        return that.fCBdisconnected();
+                                        if (that.bShutting) {
+                                          that.bShutting  = false;
+                                          if (typeof that.fCBdisconnected !== 'function') {return false;}
+                                          console.log('MQTTwrapper: Paho: disconnected normally');
+                                          return that.fCBdisconnected();
+                                        } else              {
+                                          console.log('MQTTwrapper: Paho: disconnected unintentionally');
+                                          if (typeof that.fCBkilled       !== 'function') {return false;}
+                                          return that.fCBdisconnected();
+                                        }
                                      };
         this.fCBerror               = null;
         this.fErrorHook             = function(o){
@@ -424,19 +453,22 @@ var MQTTwrapper = null;
                                                                 oMessage.destinationName           );
                                       };
       }
-      connect(fCBconnected,fCBdisconnected,fCBerror) {
-        this.fCBconnected    = (typeof fCBconnected    === 'function') ? fCBconnected    : null;
-        this.fCBdisconnected = (typeof fCBdisconnected === 'function') ? fCBdisconnected : null;
-        this.fCBerror        = (typeof fCBerror        === 'function') ? fCBerror        : null;
+      connect(fCBconnected,fCBdisconnected,fCBkilled,fCBerror) {
+        this.bShutting       = false                                                                           ;
+        this.fCBconnected    = (typeof fCBconnected    === 'function') ? fCBconnected    : null                ;
+        this.fCBdisconnected = (typeof fCBdisconnected === 'function') ? fCBdisconnected : null                ;
+        this.fCBkilled       = (typeof fCBkilled       === 'function') ? fCBkilled       : this.fCBdisconnected;
+        this.fCBerror        = (typeof fCBerror        === 'function') ? fCBerror        : null                ;
         //
         this.oPaho.connect({   useSSL    : this.bSecure    ,
                                userName  : this.sId        ,
                                password  : this.sPasswd    ,
-                             //reconnect : true            ,
+                             //reconnect : true            , // Unsupported even though the API doc mentions it.
                                onSuccess : this.fSucessHook,
                                onFailure : this.fErrorHook });
       }
       disconnect() {
+        this.bShutting = true;
         try      {this.oPaho.disconnect();} // This try-catch is to ensure
         catch(e) {                       ;} // calling this method is always
       }                                     // safe even when not connected.
