@@ -1,0 +1,353 @@
+<!doctype html>
+<!--
+######################################################################
+#
+# whereareweat.html: "Where are we at?"
+#   An Example to Try the MQTTwrapper Class (with a Map and the getLocation)
+#
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-18
+#
+#
+# This is a public-domain software (CC0). It means that all of the
+# people can use this for any purposes with no restrictions at all.
+# By the way, We are fed up with the side effects which are brought
+# about by the major licenses.
+#
+######################################################################
+-->
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Where Are We At? &mdash; MQTTwrapper Class Demo</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <script src="../lib.js/MQTTwrapper.js">{"order":["Paho","MQTT.js"]}</script>
+  <!--  for Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+  <!-- /for Leaflet -->
+</head>
+
+<body>
+  <h1>Where Are We At? &mdash; MQTTwrapper Class Demo</h1>
+  <p id="which_library">(No library is wrapped...)</p>
+
+  <h2>HOST (Where is the Broker):</h2>
+  <div>
+    <dl>
+      <dt>URL:</dt>
+      <dd>
+        <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" />
+      </dd>
+      <dd>
+        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset()"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
+      </dd>
+    </dl>
+    <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
+    <input type="button" id="discconnectionbutton" value="Disconnect" style="width:10em" disabled="disabled" onclick="Disconnect()" />
+  </div>
+
+  <h2>SEND (Behave as a Publisher):</h2>
+  <div>
+    topic = <input type="text" id="sendtopic" value="test" size="20" /><br/>
+    myname : <input type="text" id="myname" value="" size="20" /><br/>
+    <input type="button" id="publishbutton" value="Publish my location" onclick="Publish(true)" disabled="disabled" />
+    <input type="button" id="publishbutton2" value="Erase my location" onclick="Publish(false)" disabled="disabled" />
+  </div>
+
+  <h2>RECV (Behave as a Subscriber):</h2>
+  <div>
+    topic = <input type="text" id="recvtopic" value="test/#" size="20" /><br/>
+    <textarea id="recvbox"  style="width:40em; height:5em;" readonly="readonly"></textarea><br/>
+    <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
+    <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
+    <input type="button" id="recvstop"  value="Stop"   style="width:7em" onclick="StopSub()"  disabled="disabled" />
+    <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
+  </div>
+
+  <h2>Map (Pick Up from the Subscriber):</h3>
+  <div>
+    <div id="map" style="width:640px;height:480px;"></div>
+    <dl><dt>control:</dt>
+        <dd><label><input type="checkbox" value="on" id="tracer" checked="checked" />Trace all pins</label></dd>
+        <dd><input type="button" value="Erace all pins" onclick="EraseObjectsOnMap()" /></dd>
+    </dl>
+  </div>
+  <p>
+    The coordinate points will be pinned and drawn lines when the above subscriber receives them if the coordinate is formatted like the following.
+  </p>
+  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">plot <i>lat</i> <i>lng</i> <i>name</i></blockquote>
+  <dl>
+    <dt><i>lat</i></dt><dd>Latitude  (real-number,  -90&#8806;<i>lat</i>&#8806;90)</dd>
+    <dt><i>lng</i></dt><dd>Longitude (real-number, -180&#8806;<i>lng</i>&#8806;180)</dd>
+    <dt><i>name</i></dt><dd>the name of the point (option)</dd>
+  </dl>
+  <p>
+    Or you can erase your pin by the following message.
+  </p>
+  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">erase <i>name</i></blockquote>
+  <p>
+    "<i>name</i>" is the name of your pin. But the word "all" is the special one to erase all pins.
+  </p>
+
+  <script>
+    //////////////////////////////////////////////////////////////////
+    // Initialize for this webpage
+    //////////////////////////////////////////////////////////////////
+    const oPreset = [ {"label":"HiveMQ1" , "desc":"the HiveMQ Public broker"                       , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ2" , "desc":"the HiveMQ Public broker (TLS)"                 , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ3" , "desc":"the HiveMQ MQTT Browser Client"                 , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"RichLab.", "desc":"test broker by RichLab. (with a test publisher)", "prot":0, "host":"testbroker.richlab.org"  , "port":8000, "path":""    , "pubtopic":"example/where", "subtopic":"example/where"} ];
+    (function(){
+      let eSel,eOpt,i;
+      eSel = document.getElementById('preset_selector');
+      if (! eSel                     ) {return;}
+      if (typeof oPreset !== 'object') {return;}
+      for (i=0; i<oPreset.length; i++) {
+        eOpt = document.createElement('option');
+        eOpt.value     = oPreset[i].label                                ;
+        eOpt.innerHTML = oPreset[i].label + ' &mdash; ' + oPreset[i].desc;
+        eSel.appendChild(eOpt);
+      }
+    })();
+
+    //////////////////////////////////////////////////////////////////
+    // Initialize for MQTTwrapper
+    //////////////////////////////////////////////////////////////////
+    let oMQTTw;
+    
+    let ePreset        = document.getElementById('preset_selector'     );
+    let eConn          = document.getElementById('connectionbutton'    );
+    let eDcon          = document.getElementById('discconnectionbutton');
+    let ePub           = document.getElementById('publishbutton'       );
+    let ePub2          = document.getElementById('publishbutton2'      );
+    let eProt          = document.getElementById('prot'                );
+    let eAddr          = document.getElementById('addr'                );
+    let ePort          = document.getElementById('port'                );
+    let ePath          = document.getElementById('path'                );
+    let eMyname        = document.getElementById('myname'              );
+    let eSendtopic     = document.getElementById('sendtopic'           );
+    let eRecvbox       = document.getElementById('recvbox'             );
+    let eRecvtopic     = document.getElementById('recvtopic'           );
+    let eRecvtopicname = document.getElementById('recvtopicname'       );
+    let eRecvstart     = document.getElementById('recvstart'           );
+    let eRecvstop      = document.getElementById('recvstop'            );
+    let eRecvclear     = document.getElementById('recvclear'           );
+    
+    if (MQTTwrapper.sLibname !== '') {
+      let e=document.getElementById('which_library');
+      if (e) {e.innerHTML='(Wrapped library this time is "'+MQTTwrapper.sLibname+'")';}
+      eConn.disabled = false;
+      eDcon.disabled = false;
+    }
+    
+    
+    //////////////////////////////////////////////////////////////////
+    // Initialize for the Map
+    //////////////////////////////////////////////////////////////////
+    
+    let eTracer = document.getElementById('tracer');
+    let oPins = new Array();
+    let oFgrp = L.featureGroup();
+    let oMap = L.map('map').setView([35.6889101,139.748428], 11);
+    if (true) {
+      // --- Google Map ---
+      L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
+                  {attribution: '<a href="https://developers.google.com/maps/documentation" target="_blank">Google Map</a>'})
+       .addTo(oMap);
+    } else    {
+      // --- OpenStreetMap ---
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  {attribution: 'c <a href="https://osm.org/copyright">OpenStreetMap</a> contributors, <a href="//creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'})
+       .addTo(oMap);
+    }
+    // Parse and inject the incoming data into the chart
+    // the data format assumed the following:
+    //   * space-separated-data
+    //   * three or four columns
+    //     1 : "plot" keyword
+    //     2 : latitude  ( -90<=lat<= 90)
+    //     3 : longitude (-180<=lon<=180)
+    //    [4]: pointname
+    function parsinjector(sInData) {
+      // Parse
+      let lsInData, nLat, nLng, sNam, s;
+      if (typeof sInData !== 'string') {return;}
+      sInData = sInData.replace(/\n.*$/,'');
+      if        (sInData.match(/^plot +-?\d+(\.\d+)? +-?\d+(\.\d+)? +[^ ].*?$/)) {
+        s    = sInData.replace(/^plot +/,'');
+        nLat = s.replace(/ .*$/,'') *1;
+        s    = s.replace(/^[^ ]+ +/,'');
+        nLng = s.replace(/ .*$/,'') *1;
+        sNam = s.replace(/^[^ ]+ */,'');
+        
+        
+        // Plot
+        if (sNam in oPins) {oPins[sNam].remove();oFgrp.removeLayer(oPins[sNam]);delete oPins[sNam];}
+        oPins[sNam] = L.marker([nLat, nLng]).addTo(oMap);
+        oPins[sNam].bindPopup(sNam).openPopup();
+        oFgrp.addLayer(oPins[sNam]);
+        // Fit the screen
+        if (eTracer.checked) {oMap.fitBounds(oFgrp.getBounds());}
+      } else if (sInData.match(/^erase +all$/)                                   ) {
+        EraseObjectsOnMap();
+      } else if (sInData.match(/^erase +[^ ].*?$/)                               ) {
+        sNam = sInData.replace(/^erase +/,'');
+        if (sNam in oPins) {oPins[sNam].remove();oFgrp.removeLayer(oPins[sNam]);delete oPins[sNam];}
+      }
+    }
+    
+    
+    //////////////////////////////////////////////////////////////////
+    // Button Attached Functions
+    //////////////////////////////////////////////////////////////////
+    
+    function Connect() {
+      oMQTTw = new MQTTwrapper(eProt.value + '://' + eAddr.value + ':' + ePort.value + '/' + ePath.value);
+      if (! oMQTTw) { alert('MQTTwrapper does not work correctly'); return; };
+      
+      eConn.value      = 'CONNECTING...';
+      eConn.disabled   = true;
+      ePreset.disabled = true;
+      
+      oMQTTw.connect(
+        //--- callback for connected ---------------------------------
+        () => { eProt.item(1-eProt.selectedIndex).disabled = true;
+                eAddr.readOnly                             = true;
+                ePort.readOnly                             = true;
+                ePath.readOnly                             = true;
+                eConn.value                                = 'NOW CONNECTED';
+                eConn.disabled                             = true;
+                ePreset.disabled                           = true;
+                ePub.disabled                              = false;
+                ePub2.disabled                             = false;
+                eRecvstart.disabled                        = false;
+                eRecvstop.disabled                         =  true;          },
+        //--- callback for disconnected ------------------------------
+        Disconnect,
+        Disconnect,
+        //--- callback for connecting error --------------------------
+        () => { eConn.value                                = 'Connect';
+                ePreset.disabled                           = false;
+                eConn.disabled                             = false;          }
+      );
+    }
+    
+    function Disconnect() {
+      if (! oMQTTw           ) {return             ;}
+      if (  oMQTTw.bConnected) {oMQTTw.disconnect();}
+      eProt.item(1-eProt.selectedIndex).disabled = false;
+      eAddr.readOnly                             = false;
+      ePort.readOnly                             = false;
+      ePath.readOnly                             = false;
+      eRecvtopic.readOnly                        = false;
+      eConn.value                                = 'Connect';
+      eConn.disabled                             = false;
+      ePreset.disabled                           = false;
+      ePub.disabled                              = true;
+      ePub2.disabled                             = true;
+      eRecvstart.disabled                        = true;
+      eRecvstop.disabled                         = true;
+    }
+    
+    async function Publish(b) {
+      let sName = eMyname.value;
+      if (sName.match(/^ *$/)) {alert('Mr. Nobody, may I have your real name?'             ); return false;}
+      if (sName === 'all'    ) {alert('Sorry, the name "all" is reserved. Set another one.'); return false;}
+
+      if (! b) {return oMQTTw.publish(eSendtopic.value,'erase '+eMyname.value);}
+
+      const oLoc = await new Promise(
+                     (resolve)=>{
+                       navigator.geolocation.getCurrentPosition((oLoc)=>{resolve(oLoc);})
+                     }
+                   );
+      return oMQTTw.publish(
+        eSendtopic.value,
+        'plot '+oLoc.coords.latitude+' '+oLoc.coords.longitude+' '+eMyname.value
+      );
+    }
+    
+    function Receiver(sMessage, sTopic) {
+      eRecvbox.value += ((eRecvbox.value!='')?'\n':'') 
+                        + ((eRecvtopicname.checked)?sTopic+' : ':'')
+                        + sMessage;
+      eRecvbox.scrollTop = eRecvbox.scrollHeight;
+      parsinjector(sMessage+'');
+    }
+    
+    function StartSub() {
+      let topic = eRecvtopic.value;
+      if (topic === '') {
+        eSendbox.value = 'NOT Subscribe due to no topic';
+        return false;
+      }
+      if (! oMQTTw.setReceiverCallback(Receiver)) {return false;}
+      if (! oMQTTw.subscribe(topic)             ) {return false;}
+      eRecvtopic.readOnly = true;
+      eRecvstart.disabled = true;
+      eRecvstop.disabled  = false;
+      return true;
+    }
+    
+    function StopSub() {
+      let topic = eRecvtopic.value;
+      if (! oMQTTw.unsubscribe(topic)) {return false;}
+      eRecvtopic.readOnly = false;
+      eRecvstart.disabled = false;
+      eRecvstop.disabled  = true;
+      return true;
+    }
+    
+    function ClearSub() {
+      eRecvbox.value = '';
+    }
+    
+    function Preset() {
+      if ( typeof(oMQTTw)==='undefined'                            ||
+          (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
+        if (ePreset.selectedIndex==0) {return;}
+        eProt.selectedIndex = oPreset[ePreset.selectedIndex-1].prot    ;
+        eAddr.value         = oPreset[ePreset.selectedIndex-1].host    ;
+        ePort.value         = oPreset[ePreset.selectedIndex-1].port    ;
+        ePath.value         = oPreset[ePreset.selectedIndex-1].path    ;
+        eSendtopic.value    = oPreset[ePreset.selectedIndex-1].pubtopic;
+        eRecvtopic.value    = oPreset[ePreset.selectedIndex-1].subtopic;
+      }
+      ePreset.selectedIndex = 0;
+    }
+    
+    function EraseObjectsOnMap() {
+      oPins.forEach((oPin)=>{oPin.remove();oFgrp.removeLayer(oPin);});
+      oPins={};
+      oFgrp.remove();
+      oFgrep=null; oFgrep = L.featureGroup();
+    }
+  </script>
+
+
+  <h2>README (What is this?):</h3>
+  <p>This is a control panel to try to use the MQTTwrapper class. This library makes your web browser an MQTT-over-WebSocket speaker. And then the protocol is <strong>very helpful to send/receive text data (also byte stream) from/to the UNIX stdin/stdout.</strong></p>
+  <p>Only one simple application is required to connect to the stdin/stdout. That is <a href="https://mosquitto.org/">"Mosquitto."</a></p>
+  <p>Try to use me by the following steps.</p>
+  
+  <h2>How to Use Me:</h2>
+  <h3>0-1) [PREP.] Install Mosquitto</h3>
+  <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a><p>
+  <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
+  <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
+     <textarea style="width:15em; height:3em;" readonly="readonly">listener 1883
+listener 8000
+protocol websockets</textarea></p>
+  <h3>1) Start MQTT broker by Mosquitto</h3>
+  <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
+  <h3>2) Connect me to the MQTT broker</h3>
+  <p>Fill in the URL form and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
+  <h3>3) Start subscribing</h3>
+  <p>If you want to send text data from this web page to the UNIX host, type the following command on the host to start subscribing.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC_NAME"</textarea><br/>"TOPIC_NAME" is the name of the MQTT topic you have to decide on. MQTT topic is like a kind of channel name you want to subscribe to.</p>
+  <p>Or, if you want to send text data from the UNIX host to this web page, input the topic name into the topic form in the "RECV" section, and push the start button on the same section.</p>
+  <h3>4) Publish a message</h3>
+  <p>If you want to send text data from this web page to the UNIX host, write some message into the form in the "SEND" section, and push the "Publish" button on the same section.</p>
+  <p>Or, if you want to send text data from the UNIX host to this web page, type the following command on the host to publish a message.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC_NAME"</textarea></p>
+</body>
+</html>
