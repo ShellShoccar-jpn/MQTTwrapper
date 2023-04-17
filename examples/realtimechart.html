@@ -2,10 +2,10 @@
 <!--
 ######################################################################
 #
-# chart1.html:
+# realtimechart.html:
 #   An Example to Try the MQTTwrapper Class (with a Chart)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-12
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-17
 #
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -21,7 +21,7 @@
   <title>MQTTwrapper Class Demo (with a Chart)</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <script src="../lib.js/MQTTwrapper.js">{ "order":["Paho","MQTT.js"]}</script>
+  <script src="../lib.js/MQTTwrapper.js">{"order":["Paho","MQTT.js"]}</script>
   <!-- for chartjs-plugin-streaming -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.3.2"></script>
   <script src="https://cdn.jsdelivr.net/npm/luxon@1.27.0"></script>
@@ -39,10 +39,10 @@
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" /><br/>
-        <label style="font-size:smaller"><input type="button" value="preset1" onclick="Preset('HiveMQ1')" /> for the HiveMQ Public broker</label><br/>
-        <label style="font-size:smaller"><input type="button" value="preset2" onclick="Preset('HiveMQ2')" /> for the HiveMQ Public broker (TLS)</label><br/>
-        <label style="font-size:smaller"><input type="button" value="preset3" onclick="Preset('HiveMQ3')" /> for the HiveMQ <a href="http://www.hivemq.com/demos/websocket-client/">MQTT Browser Client</a></label>
+        <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" />
+      </dd>
+      <dd>
+        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset()"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
       </dd>
     </dl>
     <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
@@ -83,15 +83,29 @@
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const oPreset = { 'HiveMQ1': {'prot':0, 'host':'broker.hivemq.com'       , 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
-                      'HiveMQ2': {'prot':1, 'host':'broker.hivemq.com'       , 'port':8884, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
-                      'HiveMQ3': {'prot':0, 'host':'broker.mqttdashboard.com', 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'} };
+    const oPreset = [ {"label":"HiveMQ1" , "desc":"the HiveMQ Public broker"                       , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ2" , "desc":"the HiveMQ Public broker (TLS)"                 , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ3" , "desc":"the HiveMQ MQTT Browser Client"                 , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"RichLab.", "desc":"test broker by RichLab. (with a test publisher)", "prot":0, "host":"testbroker.richlab.org"  , "port":8000, "path":""    , "pubtopic":"example/chart", "subtopic":"example/chart"} ];
+    (function(){
+      let eSel,eOpt,i;
+      eSel = document.getElementById('preset_selector');
+      if (! eSel                     ) {return;}
+      if (typeof oPreset !== 'object') {return;}
+      for (i=0; i<oPreset.length; i++) {
+        eOpt = document.createElement('option');
+        eOpt.value     = oPreset[i].label                                ;
+        eOpt.innerHTML = oPreset[i].label + ' &mdash; ' + oPreset[i].desc;
+        eSel.appendChild(eOpt);
+      }
+    })();
 
     //////////////////////////////////////////////////////////////////
     // Initialize for MQTTwrapper
     //////////////////////////////////////////////////////////////////
     let oMQTTw;
     
+    let ePreset        = document.getElementById('preset_selector'     );
     let eConn          = document.getElementById('connectionbutton'    );
     let eDcon          = document.getElementById('discconnectionbutton');
     let ePub           = document.getElementById('publishbutton'       );
@@ -204,8 +218,9 @@
       oMQTTw = new MQTTwrapper(eProt.value + '://' + eAddr.value + ':' + ePort.value + '/' + ePath.value);
       if (! oMQTTw) { alert('MQTTwrapper does not work correctly'); return; };
       
-      eConn.value    = 'CONNECTING...';
-      eConn.disabled = true;
+      eConn.value      = 'CONNECTING...';
+      eConn.disabled   = true;
+      ePreset.disabled = true;
       
       oMQTTw.connect(
         //--- callback for connected ---------------------------------
@@ -215,6 +230,7 @@
                 ePath.readOnly                             = true;
                 eConn.value                                = 'NOW CONNECTED';
                 eConn.disabled                             = true;
+                ePreset.disabled                           = true;
                 ePub.disabled                              = false;
                 eRecvstart.disabled                        = false;
                 eRecvstop.disabled                         =  true;          },
@@ -222,6 +238,7 @@
         Disconnect,
         //--- callback for connecting error --------------------------
         () => { eConn.value                                = 'Connect';
+                ePreset.disabled                           = false;
                 eConn.disabled                             = false;          }
       );
     }
@@ -237,6 +254,7 @@
       eRecvtopic.readOnly                        = false;
       eConn.value                                = 'Connect';
       eConn.disabled                             = false;
+      ePreset.disabled                           = false;
       ePub.disabled                              = true;
       eRecvstart.disabled                        = true;
       eRecvstop.disabled                         = true;
@@ -283,16 +301,18 @@
       eRecvbox.value = '';
     }
     
-    function Preset(sProf) {
+    function Preset() {
       if ( typeof(oMQTTw)==='undefined'                            ||
           (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
-        eProt.selectedIndex = oPreset[sProf].prot ;
-        eAddr.value         = oPreset[sProf].host ;
-        ePort.value         = oPreset[sProf].port ;
-        ePath.value         = oPreset[sProf].path ;
-        eSendtopic.value    = oPreset[sProf].pubtopic;
-        eRecvtopic.value    = oPreset[sProf].subtopic;
+        if (ePreset.selectedIndex==0) {return;}
+        eProt.selectedIndex = oPreset[ePreset.selectedIndex-1].prot    ;
+        eAddr.value         = oPreset[ePreset.selectedIndex-1].host    ;
+        ePort.value         = oPreset[ePreset.selectedIndex-1].port    ;
+        ePath.value         = oPreset[ePreset.selectedIndex-1].path    ;
+        eSendtopic.value    = oPreset[ePreset.selectedIndex-1].pubtopic;
+        eRecvtopic.value    = oPreset[ePreset.selectedIndex-1].subtopic;
       }
+      ePreset.selectedIndex = 0;
     }
   </script>
 
