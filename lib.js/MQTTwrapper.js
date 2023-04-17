@@ -291,7 +291,8 @@ var MQTTwrapper = null;
        //
         this.oClient.on('close', () => {
           console.log('MQTTwrapper: MQTT.js: dicconnected');
-          that.bConnected = false;
+          if (that.bConnected) {that.bConnected=false;}
+          else                 {that.oClient.end();  } // Maybe connection error
           if (typeof that.fCBdisconnected !== 'function') {return false;}
           return that.fCBdisconnected();
         });
