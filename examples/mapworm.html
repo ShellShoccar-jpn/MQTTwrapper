@@ -1,0 +1,446 @@
+<!doctype html>
+<!--
+######################################################################
+#
+# mapworm.html: "The Map Worm"
+#   An Example to Try the MQTTwrapper Class (with a Map)
+#
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-17
+#
+#
+# This is a public-domain software (CC0). It means that all of the
+# people can use this for any purposes with no restrictions at all.
+# By the way, We are fed up with the side effects which are brought
+# about by the major licenses.
+#
+######################################################################
+
+
+<<SAMPLE COORDINATE DATA SETS>>
+
+If you do not have any sample coordinate data set, try this one.
+Type the following one-liner commands on your UNIX terminal while
+subscribing to "testtopic/train" via "ws://broker.hivemq.com:8000/mqtt."
+
+$ cat <<TRAIN |
+plot 35.681382 139.766084 東京 (Tokyo)
+plot 35.713768 139.777254 上野 (Ueno)
+plot 35.906295 139.623999 大宮 (Omiya)
+plot 36.139702 139.389942 熊谷 (Kumagaya)
+plot 36.218575 139.179739 本庄早稲田 (Honjo Waseda)
+plot 36.322356 139.013057 高崎 (Takasaki)
+plot 36.362408 138.849589 安中榛名 (Annaka Haruna)
+plot 36.34255 138.635062 軽井沢 (Karuizawa)
+plot 36.277898 138.464339 佐久平 (Sakudaira)
+plot 36.396498 138.249736 上田 (Ueda)
+plot 36.643 138.188686 長野 (Nagano)
+plot 36.847975 138.359663 飯山 (Iiyama)
+plot 37.081813 138.249476 上越妙高 (Joetsu Myoko)
+plot 37.043647 137.861327 糸魚川 (Itoigawa)
+plot 36.8742374 137.4814155 黒部宇奈月温泉 (Kurobe Unazuki Onsen)
+plot 36.701226 137.21319 富山 (Toyama)
+plot 36.727004 137.010459 新高岡 (Shin-Takaoka)
+plot 36.578273 136.647763 金沢 (Kanazawa)
+TRAIN
+while read line; do sleep 1; echo "$line"; done |
+mosquitto_pub -l -t testtopic/train -h broker.hivemq.com
+$
+
+$ cat <<TRAIN |
+plot 35.612858 140.11434 千葉 (Chiba)
+plot 35.622581 140.103279 西千葉 (Nichi-Chiba)
+plot 35.637425 140.092404 稲毛 (Inage)
+plot 35.651828 140.072961 新検見川 (Shin-Kemigawa)
+plot 35.659386 140.057949 幕張 (Makuhari)
+plot 35.672795 140.042241 幕張本郷 (Makuhari Hongo)
+plot 35.691228 140.020476 津田沼 (Tsudanuma)
+plot 35.699813 140.004272 東船橋 (Higashi-Funabashi)
+plot 35.701735 139.985218 船橋 (Funabashi)
+plot 35.707452 139.959097 西船橋 (Nishi-Funabashi)
+plot 35.714276 139.943092 下総中山 (Shimousa Nakayama)
+plot 35.72277744925465 139.92651444626975 本八幡 (Moto Yawata)
+plot 35.729277 139.907809 市川 (Ichikawa)
+plot 35.732962 139.881682 小岩 (Koiwa)
+plot 35.716789 139.85828 新小岩 (Shin-Koiwa)
+plot 35.706434 139.842516 平井 (Hirai)
+plot 35.697587 139.826078 亀戸 (Kameido)
+plot 35.696437 139.813949 錦糸町 (Kinshicho)
+plot 35.69661867521563 139.79736660607162 両国 (Ryogoku)
+plot 35.69745238672908 139.78636969579387 浅草橋 (Asakusabashi)
+plot 35.698683 139.774219 秋葉原 (Akihabara)
+plot 35.699855 139.763786 御茶ノ水 (Ochanomizu)
+plot 35.70203 139.753653 水道橋 (Suidobashi)
+plot 35.702065 139.745015 飯田橋 (Iidabashi)
+plot 35.691210732070374 139.73649022635075 市ケ谷 (Ichigaya)
+plot 35.686014 139.730667 四ツ谷 (Yotsuya)
+plot 35.68009 139.720243 信濃町 (Shinanomachi)
+plot 35.681231 139.711644 千駄ケ谷 (Sendagaya)
+plot 35.683043838270954 139.7020716435509 代々木 (Yoyogi)
+plot 35.68844644213138 139.69860159326348 新宿 (Shinjuku)
+plot 35.700722 139.697358 大久保 (Okubo)
+plot 35.70612169723491 139.68379064463082 東中野 (Higashi-Nakano)
+plot 35.706032 139.665652 中野 (Nakako)
+plot 35.705385 139.649867 高円寺 (Koenji)
+plot 35.704818 139.635868 阿佐ケ谷 (Asagaya)
+plot 35.704632 139.619981 荻窪 (Ogikubo)
+plot 35.703842 139.599361 西荻窪 (Nishi-Ogikubo)
+plot 35.70211210025202 139.58045257022607 吉祥寺 (Kichijoji)
+plot 35.702708 139.560831 三鷹 (Mitaka)
+TRAIN
+while read line; do sleep 1; echo "$line"; done |
+mosquitto_pub -l -t testtopic/train -h broker.hivemq.com
+$
+
+$ cat <<TRAIN |
+plot 35.586859 139.705942 西馬込 (Nishi-Magome)
+plot 35.596435 139.711772 馬込 (Magome)
+plot 35.605479 139.713679 中延 (Nakanobu)
+plot 35.614719 139.716398 戸越 (Togoshi)
+plot 35.626446 139.723444 五反田 (Gotanda)
+plot 35.631679 139.730305 高輪台 (Takanawadai)
+plot 35.638692 139.74002 泉岳寺 (Sengakuji)
+plot 35.64818 139.748775 三田 (Mita)
+plot 35.65689054861274 139.75469940807673 大門 (Daimon)
+plot 35.665498 139.75964 新橋 (Shimbashi)
+plot 35.669464 139.767253 東銀座 (Higashi-Ginza)
+plot 35.675461 139.771767 宝町 (Takaracho)
+plot 35.682413 139.773919 日本橋 (Nihombashi)
+plot 35.686307 139.782285 人形町 (Ningyocho)
+plot 35.692126 139.784821 東日本橋 (Higashi-Nihombashi)
+plot 35.69745238672908 139.78636969579387 浅草橋 (Asakusabashi)
+plot 35.705462557062255 139.7925091045909 蔵前 (Kuramae)
+plot 35.712074 139.79843 浅草 (Asakusa)
+plot 35.70858 139.804624 本所吾妻橋 (Honjo Azumabashi)
+plot 35.710702 139.812935 押上 (Oshiage)
+TRAIN
+while read line; do sleep 1; echo "$line"; done |
+mosquitto_pub -l -t testtopic/train -h broker.hivemq.com
+$
+
+$ cat <<TRAIN |
+plot 35.681382 139.766084 東京 (Tokyo)
+plot 35.675069 139.763328 有楽町 (Yurakucho)
+plot 35.665498 139.75964 新橋 (Shimbashi)
+plot 35.655646 139.756749 浜松町 (Hamamatsucho)
+plot 35.645736 139.747575 田町 (Tamachi)
+plot 35.6355 139.7407 高輪ゲートウェイ (Takanawa Gateway)
+plot 35.630152 139.74044 品川 (Shinagawa)
+plot 35.6197 139.728553 大崎 (Osaki)
+plot 35.626446 139.723444 五反田 (Gotanda)
+plot 35.633998 139.715828 目黒 (Megro)
+plot 35.64669 139.710106 恵比寿 (Ebisu)
+plot 35.658616102225594 139.69937139772813 渋谷 (Shibuya)
+plot 35.670168 139.702687 原宿 (Harajuku)
+plot 35.683043838270954 139.7020716435509 代々木 (Yoyogi)
+plot 35.68844644213138 139.69860159326348 新宿 (Shinjuku)
+plot 35.701306 139.700044 新大久保 (Shin-Okubo)
+plot 35.712285 139.703782 高田馬場 (Takadano Bana)
+plot 35.721204 139.706587 目白 (Mejiro)
+plot 35.728926 139.71038 池袋 (Ikebukuro)
+plot 35.73159 139.729329 大塚 (Otsuka)
+plot 35.733492 139.739345 巣鴨 (Sugamo)
+plot 35.736489 139.746875 駒込 (Komagome)
+plot 35.738062 139.76086 田端 (Tabata)
+plot 35.732135 139.766787 西日暮里 (Nishi-Nippori)
+plot 35.727772 139.770987 日暮里 (Nippori)
+plot 35.720495 139.778837 鶯谷 (Uguisudani)
+plot 35.713768 139.777254 上野 (Ueno)
+plot 35.707963621999376 139.77336630458015 御徒町 (Okachimachi)
+plot 35.698683 139.774219 秋葉原 (Akihabara)
+plot 35.69169 139.770883 神田 (Kanda)
+plot 35.681382 139.766084 東京 (Tokyo)
+TRAIN
+while read line; do sleep 1; echo "$line"; done |
+mosquitto_pub -l -t testtopic/train -h broker.hivemq.com
+$
+
+-->
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>The Map Worm &mdash; MQTTwrapper Class Demo</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <script src="../lib.js/MQTTwrapper.js"></script>
+  <!--  for Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+  <!-- /for Leaflet -->
+</head>
+
+<body>
+  <h1>The Map Worm &mdash; MQTTwrapper Class Demo</h1>
+  <p id="which_library">(No library is wrapped...)</p>
+
+  <h2>HOST (Where is the Broker):</h2>
+  <div>
+    <dl>
+      <dt>URL:</dt>
+      <dd>
+        <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="gavial.toyokeizai-businessnext.net" size="20" />:<input type="text" id="port" value="11883" size="5" />/<input type="text" id="path" value="" size="20" /><br/>
+        <label style="font-size:smaller"><input type="button" value="preset1" onclick="Preset('HiveMQ1')" /> for the HiveMQ Public broker</label><br/>
+        <label style="font-size:smaller"><input type="button" value="preset2" onclick="Preset('HiveMQ2')" /> for the HiveMQ Public broker (TLS)</label><br/>
+        <label style="font-size:smaller"><input type="button" value="preset3" onclick="Preset('HiveMQ3')" /> for the HiveMQ <a href="http://www.hivemq.com/demos/websocket-client/">MQTT Browser Client</a></label>
+      </dd>
+    </dl>
+    <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
+    <input type="button" id="discconnectionbutton" value="Disconnect" style="width:10em" disabled="disabled" onclick="Disconnect()" />
+  </div>
+
+  <h2>SEND (Behave as a Publisher):</h2>
+  <div>
+    topic = <input type="text" id="sendtopic" value="test"   size="20" /><br/>
+    <textarea id="sendbox"  style="width:40em; height:5em;"></textarea><br/>
+    <input type="button" id="publishbutton" value="Publish" onclick="Publish()" disabled="disabled" />
+  </div>
+
+  <h2>RECV (Behave as a Subscriber):</h2>
+  <div>
+    topic = <input type="text" id="recvtopic" value="test/#" size="20" /><br/>
+    <textarea id="recvbox"  style="width:40em; height:5em;" readonly="readonly"></textarea><br/>
+    <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
+    <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
+    <input type="button" id="recvstop"  value="Stop"   style="width:7em" onclick="StopSub()"  disabled="disabled" />
+    <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
+  </div>
+
+  <h2>Map (Pick Up from the Subscriber):</h3>
+  <div><div id="map" style="width:640px;height:480px;"></div><input type="button" value="Erace" onclick="EraseObjectsOnMap()" /></div>
+  <p>
+    The coordinate points will be pinned and drawn lines when the above subscriber receives them if the coordinate is formatted like the following.
+  </p>
+  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">plot <i>lat</i> <i>lng</i> <i>name</i></blockquote>
+  <dl>
+    <dt><i>lat</i></dt><dd>Latitude  (real-number,  -90&#8806;<i>lat</i>&#8806;90)</dd>
+    <dt><i>lng</i></dt><dd>Longitude (real-number, -180&#8806;<i>lng</i>&#8806;180)</dd>
+    <dt><i>name</i></dt><dd>the name of the point (option)</dd>
+  </dl>
+
+  <script>
+    //////////////////////////////////////////////////////////////////
+    // Initialize for this webpage
+    //////////////////////////////////////////////////////////////////
+    const oPreset = { 'HiveMQ1': {'prot':0, 'host':'broker.hivemq.com'       , 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
+                      'HiveMQ2': {'prot':1, 'host':'broker.hivemq.com'       , 'port':8884, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
+                      'HiveMQ3': {'prot':0, 'host':'broker.mqttdashboard.com', 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'} };
+
+    //////////////////////////////////////////////////////////////////
+    // Initialize for MQTTwrapper
+    //////////////////////////////////////////////////////////////////
+    let oMQTTw;
+    
+    let eConn          = document.getElementById('connectionbutton'    );
+    let eDcon          = document.getElementById('discconnectionbutton');
+    let ePub           = document.getElementById('publishbutton'       );
+    let eProt          = document.getElementById('prot'                );
+    let eAddr          = document.getElementById('addr'                );
+    let ePort          = document.getElementById('port'                );
+    let ePath          = document.getElementById('path'                );
+    let eSendbox       = document.getElementById('sendbox'             );
+    let eSendtopic     = document.getElementById('sendtopic'           );
+    let eRecvbox       = document.getElementById('recvbox'             );
+    let eRecvtopic     = document.getElementById('recvtopic'           );
+    let eRecvtopicname = document.getElementById('recvtopicname'       );
+    let eRecvstart     = document.getElementById('recvstart'           );
+    let eRecvstop      = document.getElementById('recvstop'            );
+    let eRecvclear     = document.getElementById('recvclear'           );
+    
+    if (MQTTwrapper.sLibname !== '') {
+      let e=document.getElementById('which_library');
+      if (e) {e.innerHTML='(Wrapped library this time is "'+MQTTwrapper.sLibname+'")';}
+      eConn.disabled = false;
+      eDcon.disabled = false;
+    }
+    
+    
+    //////////////////////////////////////////////////////////////////
+    // Initialize for the Map
+    //////////////////////////////////////////////////////////////////
+    
+    let lPins = new Array();
+    let oLine;
+    let oFgrp = L.featureGroup();
+    let oMap = L.map('map').setView([35.6889101,139.748428], 11);
+    if (true) {
+      // --- Google Map ---
+      L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
+                  {attribution: '<a href="https://developers.google.com/maps/documentation" target="_blank">Google Map</a>'})
+       .addTo(oMap);
+    } else    {
+      // --- OpenStreetMap ---
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  {attribution: 'c <a href="https://osm.org/copyright">OpenStreetMap</a> contributors, <a href="//creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>'})
+       .addTo(oMap);
+    }
+    // Parse and inject the incoming data into the chart
+    // the data format assumed the following:
+    //   * space-separated-data
+    //   * three or four columns
+    //     1 : "plot" keyword
+    //     2 : latitude  ( -90<=lat<= 90)
+    //     3 : longitude (-180<=lon<=180)
+    //    [4]: pointname
+    function parsinjector(sInData) {
+      // Parse
+      let lsInData, nLat, nLng, sNam, s;
+      if (typeof sInData !== 'string') {return;}
+      sInData = sInData.replace(/\n.*$/,'');
+      if (! sInData.match(/^plot +-?\d+(\.\d+)? +-?\d+(\.\d+)?( +[^ ].*)?$/)) {return;}
+      s    = sInData.replace(/^plot +/,'');
+      nLat = s.replace(/ .*$/,'') *1;
+      s    = s.replace(/^[^ ]+ +/,'');
+      nLng = s.replace(/ .*$/,'') *1;
+      sNam = s.replace(/^[^ ]+ */,'');
+      
+      // Plot
+      lPins.push(L.marker([nLat, nLng]).addTo(oMap));
+      if (sNam.length) {lPins[lPins.length-1].bindPopup(sNam).openPopup();}
+      oFgrp.addLayer(lPins[lPins.length-1]);
+      // Draw the polyline
+      if        (lPins.length === 2) {
+        oLine = L.polyline(
+                  [[lPins[0].getLatLng().lat,lPins[0].getLatLng().lng],[lPins[1].getLatLng().lat,lPins[1].getLatLng().lng]],
+                  {'color':'#FF4000','opacity':0.8}
+                ).addTo(oMap);
+      } else if (lPins.length >   2) {
+        oLine = oLine.addLatLng([nLat,nLng]);
+      }
+      // Fit the screen
+      oMap.fitBounds(oFgrp.getBounds());
+    }
+    
+    
+    //////////////////////////////////////////////////////////////////
+    // Button Attached Functions
+    //////////////////////////////////////////////////////////////////
+    
+    function Connect() {
+      oMQTTw = new MQTTwrapper(eProt.value + '://' + eAddr.value + ':' + ePort.value + '/' + ePath.value);
+      if (! oMQTTw) { alert('MQTTwrapper does not work correctly'); return; };
+      
+      eConn.value    = 'CONNECTING...';
+      eConn.disabled = true;
+      
+      oMQTTw.connect(
+        //--- callback for connected ---------------------------------
+        () => { eProt.item(1-eProt.selectedIndex).disabled = true;
+                eAddr.readOnly                             = true;
+                ePort.readOnly                             = true;
+                ePath.readOnly                             = true;
+                eConn.value                                = 'NOW CONNECTED';
+                eConn.disabled                             = true;
+                ePub.disabled                              = false;
+                eRecvstart.disabled                        = false;
+                eRecvstop.disabled                         =  true;          },
+        //--- callback for disconnected ------------------------------
+        Disconnect,
+        //--- callback for connecting error --------------------------
+        () => { eConn.value                                = 'Connect';
+                eConn.disabled                             = false;          }
+      );
+    }
+    
+    function Disconnect() {
+      if (! oMQTTw           ) {return             ;}
+      if (  oMQTTw.bConnected) {oMQTTw.disconnect();}
+      eProt.item(1-eProt.selectedIndex).disabled = false;
+      eAddr.readOnly                             = false;
+      ePort.readOnly                             = false;
+      ePath.readOnly                             = false;
+      eRecvtopic.readOnly                        = false;
+      eConn.value                                = 'Connect';
+      eConn.disabled                             = false;
+      ePub.disabled                              = true;
+      eRecvstart.disabled                        = true;
+      eRecvstop.disabled                         = true;
+    }
+    
+    function Publish() {
+      let msg = eSendbox.value;
+      if (msg === '') {alert('An empty message is not allowed!'); return false;}
+      return oMQTTw.publish(eSendtopic.value, eSendbox.value);
+    }
+    
+    function Receiver(sMessage, sTopic) {
+      eRecvbox.value += ((eRecvbox.value!='')?'\n':'') 
+                        + ((eRecvtopicname.checked)?sTopic+' : ':'')
+                        + sMessage;
+      eRecvbox.scrollTop = eRecvbox.scrollHeight;
+      parsinjector(sMessage+'');
+    }
+    
+    function StartSub() {
+      let topic = eRecvtopic.value;
+      if (topic === '') {
+        eSendbox.value = 'NOT Subscribe due to no topic';
+        return false;
+      }
+      if (! oMQTTw.setReceiverCallback(Receiver)) {return false;}
+      if (! oMQTTw.subscribe(topic)             ) {return false;}
+      eRecvtopic.readOnly = true;
+      eRecvstart.disabled = true;
+      eRecvstop.disabled  = false;
+      return true;
+    }
+    
+    function StopSub() {
+      let topic = eRecvtopic.value;
+      if (! oMQTTw.unsubscribe(topic)) {return false;}
+      eRecvtopic.readOnly = false;
+      eRecvstart.disabled = false;
+      eRecvstop.disabled  = true;
+      return true;
+    }
+    
+    function ClearSub() {
+      eRecvbox.value = '';
+    }
+    
+    function Preset(sProf) {
+      if ( typeof(oMQTTw)==='undefined'                            ||
+          (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
+        eProt.selectedIndex = oPreset[sProf].prot ;
+        eAddr.value         = oPreset[sProf].host ;
+        ePort.value         = oPreset[sProf].port ;
+        ePath.value         = oPreset[sProf].path ;
+        eSendtopic.value    = oPreset[sProf].pubtopic;
+        eRecvtopic.value    = oPreset[sProf].subtopic;
+      }
+    }
+    
+    function EraseObjectsOnMap() {
+      let i;
+      if (typeof oLine==='object' && oLine!==null) {oLine.remove(); oLine=null;}
+      for (i=0;i<lPins.length;i++) {lPins[i].remove(); oFgrp.removeLayer(lPins[i]);}
+      lPins = new Array();
+      oFgrp.remove();
+      oFgrep=null; oFgrep = L.featureGroup();
+    }
+  </script>
+
+
+  <h2>README (What is this?):</h3>
+  <p>This is a control panel to try to use the MQTTwrapper class. This library makes your web browser an MQTT-over-WebSocket speaker. And then the protocol is <strong>very helpful to send/receive text data (also byte stream) from/to the UNIX stdin/stdout.</strong></p>
+  <p>Only one simple application is required to connect to the stdin/stdout. That is <a href="https://mosquitto.org/">"Mosquitto."</a></p>
+  <p>Try to use me by the following steps.</p>
+  
+  <h2>How to Use Me:</h2>
+  <h3>0-1) [PREP.] Install Mosquitto</h3>
+  <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a><p>
+  <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
+  <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
+     <textarea style="width:15em; height:3em;" readonly="readonly">listener 1883
+listener 11883
+protocol websockets</textarea></p>
+  <h3>1) Start MQTT broker by Mosquitto</h3>
+  <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
+  <h3>2) Connect me to the MQTT broker</h3>
+  <p>Fill in the URL form and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
+  <h3>3) Start subscribing</h3>
+  <p>If you want to send text data from this web page to the UNIX host, type the following command on the host to start subscribing.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC_NAME"</textarea><br/>"TOPIC_NAME" is the name of the MQTT topic you have to decide on. MQTT topic is like a kind of channel name you want to subscribe to.</p>
+  <p>Or, if you want to send text data from the UNIX host to this web page, input the topic name into the topic form in the "RECV" section, and push the start button on the same section.</p>
+  <h3>4) Publish a message</h3>
+  <p>If you want to send text data from this web page to the UNIX host, write some message into the form in the "SEND" section, and push the "Publish" button on the same section.</p>
+  <p>Or, if you want to send text data from the UNIX host to this web page, type the following command on the host to publish a message.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC_NAME"</textarea></p>
+</body>
+</html>
