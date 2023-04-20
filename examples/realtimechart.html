@@ -5,7 +5,7 @@
 # realtimechart.html:
 #   An Example to Try the MQTTwrapper Class (with a Chart)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-18
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-19
 #
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -86,7 +86,7 @@
     const oPreset = [ {"label":"HiveMQ1" , "desc":"the HiveMQ Public broker"                       , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
                       {"label":"HiveMQ2" , "desc":"the HiveMQ Public broker (TLS)"                 , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
                       {"label":"HiveMQ3" , "desc":"the HiveMQ MQTT Browser Client"                 , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"RichLab.", "desc":"test broker by RichLab. (with a test publisher)", "prot":0, "host":"testbroker.richlab.org"  , "port":8000, "path":""    , "pubtopic":"example/chart", "subtopic":"example/chart"} ];
+                      {"label":"RichLab.", "desc":"test broker by RichLab. (with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/chart", "subtopic":"example/chart"} ];
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -328,18 +328,30 @@
   <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a><p>
   <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
   <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
-     <textarea style="width:15em; height:3em;" readonly="readonly">listener 1883
+     <textarea style="width:40em; height:calc(1.3em*15); line-height:1.3;" readonly="readonly">#=== Plain MQTT
+listener 1883
+protocol mqtt
+
+#=== Plain MQTT over WebSocket
 listener 8000
-protocol websockets</textarea></p>
+protocol websockets
+
+#=== Secure MQTT over WebSocket (TLS)
+listener 8884
+protocol websockets
+certfile /PATH/TO/YOUR/certfile.pem
+keyfile  /PATH/TO/YOUR/keyfile.pem
+cafile   /PATH/TO/YOUR/cafile.pem
+tls_version tlsv1.2</textarea></p>
   <h3>1) Start MQTT broker by Mosquitto</h3>
-  <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
+  <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
   <h3>2) Connect me to the MQTT broker</h3>
   <p>Fill in the URL form and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
   <h3>3) Start subscribing</h3>
-  <p>If you want to send text data from this web page to the UNIX host, type the following command on the host to start subscribing.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC_NAME"</textarea><br/>"TOPIC_NAME" is the name of the MQTT topic you have to decide on. MQTT topic is like a kind of channel name you want to subscribe to.</p>
+  <p>If you want to send text data from this web page to the UNIX host, type the following command on the host to start subscribing.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC"</textarea><br/>"TOPIC" is the name of the MQTT topic you have to decide on. MQTT topic is like a kind of channel name you want to subscribe to.</p>
   <p>Or, if you want to send text data from the UNIX host to this web page, input the topic name into the topic form in the "RECV" section, and push the start button on the same section.</p>
   <h3>4) Publish a message</h3>
   <p>If you want to send text data from this web page to the UNIX host, write some message into the form in the "SEND" section, and push the "Publish" button on the same section.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, type the following command on the host to publish a message.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC_NAME"</textarea></p>
+  <p>Or, if you want to send text data from the UNIX host to this web page, type the following command on the host to publish a message.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC"</textarea></p>
 </body>
 </html>
