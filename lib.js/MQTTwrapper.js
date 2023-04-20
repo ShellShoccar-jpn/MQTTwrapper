@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-18
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-20
 //
 // ===================================================================
 //
@@ -290,8 +290,16 @@ var MQTTwrapper = null;
         this.fCBerror        = (typeof fCBerror        === 'function') ? fCBerror        : null                ;
         this.fCBreceiver     =                                             null;
         //
-        this.oClient = mqtt.connect(this.sUrl,{"reconnectPeriod":0});
-          // Disable reconnection for compatibility with other libraries
+        try {
+          this.oClient = mqtt.connect(this.sUrl,{"reconnectPeriod":0});
+            // Disable reconnection for compatibility with other libraries
+        } catch (o) {
+          that.bShutting = false;
+          console.error('MQTTwrapper: MQTT.js: connection error: '+o.message);
+          if (typeof that.fCBerror !== 'function') {return;}
+          that.fCBerror((('code' in o)?o.code:-1).toString()+': '+o.message);
+          return;
+        }
         if (! this.oClient) { console.error('MQTT.js: Failed to connect'); return; };
         //
         this.oClient.on('connect', (oConnack) => {
@@ -430,10 +438,10 @@ var MQTTwrapper = null;
                                      };
         this.fCBerror               = null;
         this.fErrorHook             = function(o){
-                                        console.log('MQTTwrapper: Paho: connection error: '+o.errorCode+': '+o.errorMessage);
+                                        console.error('MQTTwrapper: Paho: connection error: '+o.errorCode+': '+o.errorMessage);
                                         that.bConnected = false;
                                         if (typeof that.fCBerror !== 'function') {return false;}
-                                        return that.fCBerror(o.errorCode+':'+o.errorMessage);
+                                        return that.fCBerror(o.errorCode+': '+o.errorMessage);
                                      };
         this.oPaho.onMessageArrived = function(oMessage){
                                         if (typeof that.fCBreceiver !== 'function') {return false;}
@@ -460,12 +468,16 @@ var MQTTwrapper = null;
         this.fCBkilled       = (typeof fCBkilled       === 'function') ? fCBkilled       : this.fCBdisconnected;
         this.fCBerror        = (typeof fCBerror        === 'function') ? fCBerror        : null                ;
         //
-        this.oPaho.connect({   useSSL    : this.bSecure    ,
-                               userName  : this.sId        ,
-                               password  : this.sPasswd    ,
-                             //reconnect : true            , // Unsupported even though the API doc mentions it.
-                               onSuccess : this.fSucessHook,
-                               onFailure : this.fErrorHook });
+        try {
+          this.oPaho.connect({   useSSL    : this.bSecure    ,
+                                 userName  : this.sId        ,
+                                 password  : this.sPasswd    ,
+                               //reconnect : true            , // Unsupported even though the API doc mentions it.
+                                 onSuccess : this.fSucessHook,
+                                 onFailure : this.fErrorHook });
+        } catch (o) {
+          this.fErrorHook({"errorCode":('code' in o)?o.code:-1,"errorMessage":o.message});
+        }
       }
       disconnect() {
         this.bShutting = true;

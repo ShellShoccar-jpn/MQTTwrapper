@@ -5,7 +5,7 @@
 # whereareweat.html: "Where are we at?"
 #   An Example to Try the MQTTwrapper Class (with a Map and the getLocation)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-19
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-20
 #
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -58,7 +58,7 @@
   <h2>RECV (Behave as a Subscriber):</h2>
   <div>
     topic = <input type="text" id="recvtopic" value="test/#" size="20" /><br/>
-    <textarea id="recvbox"  style="width:40em; height:5em;" readonly="readonly"></textarea><br/>
+    <textarea id="recvbox"  style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly"></textarea><br/>
     <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
     <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
     <input type="button" id="recvstop"  value="Stop"   style="width:7em" onclick="StopSub()"  disabled="disabled" />
@@ -227,7 +227,8 @@
         Disconnect,
         Disconnect,
         //--- callback for connecting error --------------------------
-        () => { eConn.value                                = 'Connect';
+        (s)=> { alert(s)                                              ;
+                eConn.value                                = 'Connect';
                 ePreset.disabled                           = false;
                 eConn.disabled                             = false;          }
       );
