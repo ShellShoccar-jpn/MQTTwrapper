@@ -37,7 +37,7 @@
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" />
+        <select id="prot" onchange="WS_warning()"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
       </dd>
       <dd>
         ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset()"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
@@ -94,10 +94,10 @@
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const oPreset = [ {"label":"HiveMQ1" , "desc":"the HiveMQ Public broker"                       , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ2" , "desc":"the HiveMQ Public broker (TLS)"                 , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ3" , "desc":"the HiveMQ MQTT Browser Client"                 , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"RichLab.", "desc":"test broker by RichLab. (with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/where", "subtopic":"example/where"} ];
+    const oPreset = [ {"label":"HiveMQ1" , "desc":"the HiveMQ Public broker"                            , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ2" , "desc":"the HiveMQ Public broker (TLS)"                      , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ3" , "desc":"the HiveMQ MQTT Browser Client"                      , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"RichLab.", "desc":"test broker by RichLab. (TLS, with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/where", "subtopic":"example/where"} ];
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -116,6 +116,7 @@
     //////////////////////////////////////////////////////////////////
     let oMQTTw;
     
+    let eWSwarn        = document.getElementById('ws_warning'          );
     let ePreset        = document.getElementById('preset_selector'     );
     let eConn          = document.getElementById('connectionbutton'    );
     let eDcon          = document.getElementById('discconnectionbutton');
@@ -140,6 +141,7 @@
       eConn.disabled = false;
       eDcon.disabled = false;
     }
+    WS_warning();
     
     
     //////////////////////////////////////////////////////////////////
@@ -304,6 +306,13 @@
       eRecvbox.value = '';
     }
     
+    function WS_warning() {
+      if ((eProt.selectedIndex==0)                                                &&
+          (location.protocol==='https:')                                          &&
+          (! eAddr.value.match(/(^|[A-Z0-9])(localhost|127\.\d+\.\d+\.\d+|::1)$/))  ) {eWSwarn.style.display='inline';return;}
+      if ( eProt.selectedIndex==1                                                   ) {eWSwarn.style.display='none'  ;return;}
+    }
+    
     function Preset() {
       if ( typeof(oMQTTw)==='undefined'                            ||
           (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
@@ -314,6 +323,7 @@
         ePath.value         = oPreset[ePreset.selectedIndex-1].path    ;
         eSendtopic.value    = oPreset[ePreset.selectedIndex-1].pubtopic;
         eRecvtopic.value    = oPreset[ePreset.selectedIndex-1].subtopic;
+        WS_warning(oPreset[ePreset.selectedIndex-1].prot);
       }
       ePreset.selectedIndex = 0;
     }
@@ -324,6 +334,7 @@
       oFgrp.remove();
       oFgrep=null; oFgrep = L.featureGroup();
     }
+    
   </script>
 
 
