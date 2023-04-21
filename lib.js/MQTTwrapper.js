@@ -537,7 +537,7 @@ var MQTTwrapper = null;
           o.willMessage['destinationName'] = oOpt.will.topic;
           o.willMessage['qos'            ] = (('qos'    in oOpt.will) && (typeof oOpt.will.qos    === 'number' )) ? oOpt.will.qos      : 0    ;
           o.willMessage['retained'       ] = (('retain' in oOpt.will) && (typeof oOpt.will.retain === 'boolean')) ? oOpt.will.retained : false;
-y        }
+        }
         //
         try {
           this.oPaho.connect(o);
