@@ -325,10 +325,10 @@ var MQTTwrapper = null;
         o['clientId'       ] = this.sClientId;
         if ('will' in oOpt) {
           if ((!('topic'   in oOpt.will))||(typeof oOpt.will.topic   !== 'string')) {
-            throw new Error('MQTT.js: Will message data has no topic name.');
+            throw new Error('MQTTwrapper: MQTT.js: Will message data has no topic name.');
           }
           if ((!('message' in oOpt.will))||(typeof oOpt.will.message !== 'string')) {
-            throw new Error('MQTT.js: Will message data has no message.'   );
+            throw new Error('MQTTwrapper: MQTT.js: Will message data has no message.'   );
           }
           o['will'] = new Object();
           o.will['topic'  ] = oOpt.will.topic;
@@ -347,7 +347,7 @@ var MQTTwrapper = null;
           that.fCBerror((('code' in o)?o.code:-1).toString()+': '+o.message);
           return;
         }
-        if (! this.oClient) { console.error('MQTT.js: Failed to connect'); return; };
+        if (! this.oClient) { console.error('MQTTwrapper: MQTT.js: Failed to connect'); return; };
         //
         this.oClient.on('connect', (oConnack) => {
           if (typeof oConnack === 'undefined') {return;}
@@ -528,10 +528,10 @@ var MQTTwrapper = null;
         o['onFailure']       = this.fErrorHook                                                                                         ;
         if ('will' in oOpt) {
           if ((!('topic'   in oOpt.will))||(typeof oOpt.will.topic   !== 'string')) {
-            throw new Error('Paho: Will message data has no topic name.');
+            throw new Error('MQTTwrapper: Paho: Will message data has no topic name.');
           }
           if ((!('message' in oOpt.will))||(typeof oOpt.will.message !== 'string')) {
-            throw new Error('Paho: Will message data has no message.'   );
+            throw new Error('MQTTwrapper: Paho: Will message data has no message.'   );
           }
           o['willMessage'] = new Paho.MQTT.Message(oOpt.will.message);
           o.willMessage['destinationName'] = oOpt.will.topic;
