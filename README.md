@@ -79,36 +79,53 @@ See the reference section for detail.
             spell.
             This property is a readonly one.
 * <Function> constructor()
-    Usage : obj = new MQTTwrapper(url);
+    Usage : obj = new MQTTwrapper(url, [id]);
             - obj ... Variable to stock an object instance.
             - url ... URL to connect the MQTT broker.
                       (It must support "MQTT over WebSocket")
+            - id .... MQTT Client ID. You can omit this, and we
+                      recommend doing so. In that case, this wrapper
+                      generates an ID randomly. to do so. In that
+                      case, this wrapper generates the ID.
     Desc. : You have to call this at first. However, the constructor
             does not connect to the broker yet. The "connect()" method
             is to connect to it.
 * <Function> connect()
-    Usage : obj.connect(
-             [onConnected[, onDisconnected[, onKilled[, onFailed]]]]
-            );
-            - obj ............. Variable stocking the object instance.
-            - onConnected ..... Callback function that is called when
-                                connected successfully.
-            - onDisconnected .. Callback function that is called when
-                                dicconnected normally. When you do not
-                                omit the "onKilled," this value will
-                                be copied to it.
-            - onKilled ........ Callback function that is called when
-                                dicconnected unintentionally. In case
-                                you need to reconnect, you can use this
-                                callback as a trigger.
-                                If you do not give me a valid value,
-                                the value of the "onDisconnected" will
-                                be copied.
-            - onFailed ........ Callback function that is called when
-                                failed to connect to the broker.
-                                This function accept one argument.
-                                  1. (string type) To get the error
-                                     message
+    Usage : obj.connect([opt])
+            - opt .. Option parameter object. You can contain the
+                     following properties.
+                     (1) Callback functions
+                       [cbConnected]   : Callback function that is called
+                                         when connected successfully.
+                       [cbDisconnected]: Callback function that is called
+                                         when dicconnected normally. When
+                                         you do not omit the "onKilled,"
+                                         this value will be copied to it.
+                       [cbKilled]      : Callback function that is called
+                                         when dicconnected unintentionally.
+                                         In case you need to reconnect,
+                                         you can use this callback as a
+                                         trigger.
+                                         If you do not give me a valid
+                                         value, the value of the
+                                         "onDisconnected" will be copied.
+                       [cbFailed]      : Callback function that is called
+                                         when failed to connect to the
+                                         broker. This function accept one
+                                         argument.
+                                           1. (string type) To get the error
+                                              message
+                     (2) "Will message" parameters (optional)
+                       [will].topic    : Topic name (string type) for
+                                         the will message. (Mandatory when
+                                         you set the "will" property)
+                       [will].message  : Message body (string type)
+                                         for the will message. (Mandatory
+                                         when you set the "will" property)
+                       [will].[qos]    : MQTT QoS for the will message.
+                                         (You can omit this)
+                       [will].[retain] : MQTT Retain flag for the will
+                                         message. (You can omit this)
     Return: Nothing.
     Desc. : This method will try to establish the connection when you
             call. And these callback functions will start being called
@@ -146,19 +163,23 @@ See the reference section for detail.
             The function will be unregistered when you call this method
             with no argument or null value.
 * <Function> subcscribe()
-    Usage : ret = obj.subcscribe(topicname);
-            - ret ........ Boolean variable to receive whether success
-                           or failure.
-            - obj ........ Variable stocking the object instance.
-            - topicname .. Topic name (string type) to subscribe.
+    Usage : ret = obj.subcscribe(topic, [opt]);
+            - ret .... Boolean variable to receive whether success
+                       or failure.
+            - obj .... Variable stocking the object instance.
+            - topic .. Topic name (string type) to subscribe.
+            - opt ...... Option parameter object. You can contain the
+                         following properties.
+                           [qos]    : MQTT QoS. (Number type, 0, 1,
+                                      or 2. Default is 0)
     Return: Returns true when this method can call the wrapping
             "subscribe()" method. (However, it does not mean that
             it succeeded in getting the acknowledgment for the request)
             The cases in this method return false are:
             - When the connection is not established.
-            - When the "topicname" is omitted.
-            - When the "topicname" is neither a string nor a number.
-            - When the "topicname" is empty.
+            - When the "topic" is omitted.
+            - When the "topic" is neither a string nor a number.
+            - When the "topic" is empty.
     Desc. : Start subscribing to the MQTT topic. And the callback
             function registerd by the "setReceiverCallback()" method
             will start being called.
@@ -169,40 +190,46 @@ See the reference section for detail.
             method just after calling the "connect()" method because
             the connection is not established yet.
 * <Function> unsubcscribe()
-    Usage : ret = obj.subcscribe(topicname);
-            - ret ........ Boolean variable to receive whether success
-                           or failure.
-            - obj ........ Variable stocking the object instance.
-            - topicname .. Topic name (string type) to subscribe.
+    Usage : ret = obj.subcscribe(topic);
+            - ret .... Boolean variable to receive whether success
+                       or failure.
+            - obj .... Variable stocking the object instance.
+            - topic .. Topic name (string type) to subscribe.
     Return: Returns true when this method can call the wrapping
             "unsubscribe()" method. (However, it does not mean that
             it succeeded in getting the acknowledgment for the request)
             The cases this method returns false are:
             - When the connection is not established.
-            - When the "topicname" is omitted.
-            - When the "topicname" is neither a string nor a number.
-            - When the "topicname" is empty.
+            - When the "topic" is omitted.
+            - When the "topic" is neither a string nor a number.
+            - When the "topic" is empty.
     Desc. : Finish subscribing to the MQTT topic. And the callback
             function registerd by the "setReceiverCallback()" method
             will finish being called.
-            You have to specify the same topicname as when you set it
-            by calling the "subscribe()" method. Otherwise, maybe you
-            cannot stop the subscribing.
+            You have to specify the same topic as when you set it
+            by calling the "subscribe()" method. Otherwise, maybe
+            you cannot stop the subscribing.
 * <Function> publish()
-    Usage : ret = obj.publish(topicname, message);
-            - ret ........ Boolean variable to receive whether success
-                           or failure.
-            - obj ........ Variable stocking the object instance.
-            - topicname .. Topic name (string type) to subscribe.
-            - message .... Message body (string type) to publish.
+    Usage : ret = obj.publish(topic, message, opt);
+            - ret ...... Boolean variable to receive whether success
+                         or failure.
+            - obj ...... Variable stocking the object instance.
+            - topic .... Topic name (string type) to publish.
+            - message .. Message body (string type) to publish.
+            - opt ...... Option parameter object. You can contain the
+                         following properties.
+                           [qos]    : MQTT QoS. (Number type, 0, 1,
+                                      or 2. Default is 0)
+                           [retain] : MQTT Retain flag. (Boolean type,
+                                      true or false. Default is false)
     Return: Returns true when this method can call the wrapping
             "publish()" method. (However, it does not mean that it
             succeeded in getting the acknowledgment for the request)
             The cases this method returns false are:
             - When the connection is not established.
-            - When the "topicname" is omitted.
-            - When the "topicname" is neither a string nor a number.
-            - When the "topicname" is empty.
+            - When the "topic" is omitted.
+            - When the "topic" is neither a string nor a number.
+            - When the "topic" is empty.
             - When the "message" is omitted.
             - When the "message" is neither a string nor a number.
     Desc. : Publish a message to the topic channel specified the

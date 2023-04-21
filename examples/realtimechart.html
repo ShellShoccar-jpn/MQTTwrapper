@@ -5,7 +5,7 @@
 # realtimechart.html:
 #   An Example to Try the MQTTwrapper Class (with a Chart)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-20
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-21
 #
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -83,10 +83,16 @@
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const oPreset = [ {"label":"HiveMQ1" , "desc":"the HiveMQ Public broker"                            , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ2" , "desc":"the HiveMQ Public broker (TLS)"                      , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ3" , "desc":"the HiveMQ MQTT Browser Client"                      , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"RichLab.", "desc":"test broker by RichLab. (TLS, with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/chart", "subtopic":"example/chart"} ];
+    const oPreset = [ {"label":"Eclipse1"  , "desc":"Eclipse public MQTT broker"                          , "prot":0, "host":"mqtt.eclipseprojects.io" , "port":  80, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"Eclipse2"  , "desc":"Eclipse public MQTT broker (TLS)"                    , "prot":1, "host":"mqtt.eclipseprojects.io" , "port": 443, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"EMQX1"     , "desc":"EMQX MQTT Public Broker"                             , "prot":0, "host":"broker.emqx.io"          , "port":8083, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"EMQX2"     , "desc":"EMQX MQTT Public Broker (TLS)"                       , "prot":1, "host":"broker.emqx.io"          , "port":8084, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ1"   , "desc":"HiveMQ Free Public broker"                           , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ2"   , "desc":"HiveMQ Free Public broker (TLS)"                     , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ3"   , "desc":"HiveMQ MQTT Browser Client"                          , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"Mosquitto1", "desc":"Eclipse Mosquitto MQTT broker"                       , "prot":0, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"Mosquitto2", "desc":"Eclipse Mosquitto MQTT broker (TLS)"                 , "prot":1, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"RichLab."  , "desc":"test broker by RichLab. (TLS, with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/chart", "subtopic":"example/chart"} ];
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -105,6 +111,7 @@
     //////////////////////////////////////////////////////////////////
     let oMQTTw;
     
+    let eWSwarn        = document.getElementById('ws_warning'          );
     let ePreset        = document.getElementById('preset_selector'     );
     let eConn          = document.getElementById('connectionbutton'    );
     let eDcon          = document.getElementById('discconnectionbutton');
@@ -189,7 +196,7 @@
         //     2: E.nnn              (UNIX epoch time with 3 decimal points)
         //     3: value #1 (A, real-number, -10<A<10)
         //     4: value #2 (B, real-number, -10<B<10)
-        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +-?\d+(\.\d+)? +-?\d+(\.\d+)?$/)) {return;}
+        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[2]*1});
         oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[3]*1});
@@ -200,7 +207,7 @@
         //     1: "plot" keyword
         //     2: value #1 (A, real-number, -10<A<10)
         //     3: value #2 (B, real-number, -10<B<10)
-        if (! sInData.match(/^plot +-?\d+(\.\d+)? +-?\d+(\.\d+)?$/)) {return;}
+        if (! sInData.match(/^plot +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[1]*1});
         oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[2]*1});
@@ -223,27 +230,27 @@
       eConn.disabled   = true;
       ePreset.disabled = true;
       
-      oMQTTw.connect(
+      oMQTTw.connect({
         //--- callback for connected ---------------------------------
-        () => { eProt.item(1-eProt.selectedIndex).disabled = true;
-                eAddr.readOnly                             = true;
-                ePort.readOnly                             = true;
-                ePath.readOnly                             = true;
-                eConn.value                                = 'NOW CONNECTED';
-                eConn.disabled                             = true;
-                ePreset.disabled                           = true;
-                ePub.disabled                              = false;
-                eRecvstart.disabled                        = false;
-                eRecvstop.disabled                         =  true;          },
+        "cbConnected"    : () => { eProt.item(1-eProt.selectedIndex).disabled = true;
+                                   eAddr.readOnly                             = true;
+                                   ePort.readOnly                             = true;
+                                   ePath.readOnly                             = true;
+                                   eConn.value                                = 'NOW CONNECTED';
+                                   eConn.disabled                             = true;
+                                   ePreset.disabled                           = true;
+                                   ePub.disabled                              = false;
+                                   eRecvstart.disabled                        = false;
+                                   eRecvstop.disabled                         =  true;          },
         //--- callback for disconnected ------------------------------
-        Disconnect,
-        Disconnect,
+        "cbDisconnected" : Disconnect,
+        "cbKilled"       : Disconnect,
         //--- callback for connecting error --------------------------
-        (s)=> { alert(s)                                              ;
-                eConn.value                                = 'Connect';
-                ePreset.disabled                           = false;
-                eConn.disabled                             = false;          }
-      );
+        "cbFailed"       : (s)=> { alert(s)                                              ;
+                                   eConn.value                                = 'Connect';
+                                   ePreset.disabled                           = false;
+                                   eConn.disabled                             = false;          }
+      });
     }
     
     function Disconnect() {
@@ -321,6 +328,7 @@
         ePath.value         = oPreset[ePreset.selectedIndex-1].path    ;
         eSendtopic.value    = oPreset[ePreset.selectedIndex-1].pubtopic;
         eRecvtopic.value    = oPreset[ePreset.selectedIndex-1].subtopic;
+        WS_warning(oPreset[ePreset.selectedIndex-1].prot);
       }
       ePreset.selectedIndex = 0;
     }

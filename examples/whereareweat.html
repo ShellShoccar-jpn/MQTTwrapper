@@ -5,7 +5,7 @@
 # whereareweat.html: "Where are we at?"
 #   An Example to Try the MQTTwrapper Class (with a Map and the getLocation)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-20
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-21
 #
 #
 # This is a public-domain software (CC0). It means that all of the
@@ -94,10 +94,16 @@
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const oPreset = [ {"label":"HiveMQ1" , "desc":"the HiveMQ Public broker"                            , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ2" , "desc":"the HiveMQ Public broker (TLS)"                      , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ3" , "desc":"the HiveMQ MQTT Browser Client"                      , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"RichLab.", "desc":"test broker by RichLab. (TLS, with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/where", "subtopic":"example/where"} ];
+    const oPreset = [ {"label":"Eclipse1"  , "desc":"Eclipse public MQTT broker"                          , "prot":0, "host":"mqtt.eclipseprojects.io" , "port":  80, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"Eclipse2"  , "desc":"Eclipse public MQTT broker (TLS)"                    , "prot":1, "host":"mqtt.eclipseprojects.io" , "port": 443, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"EMQX1"     , "desc":"EMQX MQTT Public Broker"                             , "prot":0, "host":"broker.emqx.io"          , "port":8083, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"EMQX2"     , "desc":"EMQX MQTT Public Broker (TLS)"                       , "prot":1, "host":"broker.emqx.io"          , "port":8084, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ1"   , "desc":"HiveMQ Free Public broker"                           , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ2"   , "desc":"HiveMQ Free Public broker (TLS)"                     , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"HiveMQ3"   , "desc":"HiveMQ MQTT Browser Client"                          , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"Mosquitto1", "desc":"Eclipse Mosquitto MQTT broker"                       , "prot":0, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"Mosquitto2", "desc":"Eclipse Mosquitto MQTT broker (TLS)"                 , "prot":1, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
+                      {"label":"RichLab."  , "desc":"test broker by RichLab. (TLS, with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/where", "subtopic":"example/where"} ];
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -176,7 +182,7 @@
       let lsInData, nLat, nLng, sNam, s;
       if (typeof sInData !== 'string') {return;}
       sInData = sInData.replace(/\n.*$/,'');
-      if        (sInData.match(/^plot +-?\d+(\.\d+)? +-?\d+(\.\d+)? +[^ ].*?$/)) {
+      if        (sInData.match(/^plot +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)? +[^ ].*?$/)) {
         s    = sInData.replace(/^plot +/,'');
         nLat = s.replace(/ .*$/,'') *1;
         s    = s.replace(/^[^ ]+ +/,'');
@@ -212,28 +218,28 @@
       eConn.disabled   = true;
       ePreset.disabled = true;
       
-      oMQTTw.connect(
+      oMQTTw.connect({
         //--- callback for connected ---------------------------------
-        () => { eProt.item(1-eProt.selectedIndex).disabled = true;
-                eAddr.readOnly                             = true;
-                ePort.readOnly                             = true;
-                ePath.readOnly                             = true;
-                eConn.value                                = 'NOW CONNECTED';
-                eConn.disabled                             = true;
-                ePreset.disabled                           = true;
-                ePub.disabled                              = false;
-                ePub2.disabled                             = false;
-                eRecvstart.disabled                        = false;
-                eRecvstop.disabled                         =  true;          },
+        "cbConnected"    : () => { eProt.item(1-eProt.selectedIndex).disabled = true;
+                                   eAddr.readOnly                             = true;
+                                   ePort.readOnly                             = true;
+                                   ePath.readOnly                             = true;
+                                   eConn.value                                = 'NOW CONNECTED';
+                                   eConn.disabled                             = true;
+                                   ePreset.disabled                           = true;
+                                   ePub.disabled                              = false;
+                                   ePub2.disabled                             = false;
+                                   eRecvstart.disabled                        = false;
+                                   eRecvstop.disabled                         =  true;          },
         //--- callback for disconnected ------------------------------
-        Disconnect,
-        Disconnect,
+        "cbDisconnected" : Disconnect,
+        "cbKilled"       : Disconnect,
         //--- callback for connecting error --------------------------
-        (s)=> { alert(s)                                              ;
-                eConn.value                                = 'Connect';
-                ePreset.disabled                           = false;
-                eConn.disabled                             = false;          }
-      );
+        "cbFailed"       : (s)=> { alert(s)                                              ;
+                                   eConn.value                                = 'Connect';
+                                   ePreset.disabled                           = false;
+                                   eConn.disabled                             = false;          }
+      });
     }
     
     function Disconnect() {

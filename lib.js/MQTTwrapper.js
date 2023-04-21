@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-20
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-21
 //
 // ===================================================================
 //
@@ -84,36 +84,53 @@
 //              spell.
 //              This property is a readonly one.
 //  * <Function> constructor()
-//      Usage : obj = new MQTTwrapper(url);
+//      Usage : obj = new MQTTwrapper(url, [id]);
 //              - obj ... Variable to stock an object instance.
 //              - url ... URL to connect the MQTT broker.
 //                        (It must support "MQTT over WebSocket")
+//              - id .... MQTT Client ID. You can omit this, and we
+//                        recommend doing so. In that case, this wrapper
+//                        generates an ID randomly. to do so. In that
+//                        case, this wrapper generates the ID.
 //      Desc. : You have to call this at first. However, the constructor
 //              does not connect to the broker yet. The "connect()" method
 //              is to connect to it.
 //  * <Function> connect()
-//      Usage : obj.connect(
-//               [onConnected[, onDisconnected[, onKilled[, onFailed]]]]
-//              );
-//              - obj ............. Variable stocking the object instance.
-//              - onConnected ..... Callback function that is called when
-//                                  connected successfully.
-//              - onDisconnected .. Callback function that is called when
-//                                  dicconnected normally. When you do not
-//                                  omit the "onKilled," this value will
-//                                  be copied to it.
-//              - onKilled ........ Callback function that is called when
-//                                  dicconnected unintentionally. In case
-//                                  you need to reconnect, you can use this
-//                                  callback as a trigger.
-//                                  If you do not give me a valid value,
-//                                  the value of the "onDisconnected" will
-//                                  be copied.
-//              - onFailed ........ Callback function that is called when
-//                                  failed to connect to the broker.
-//                                  This function accept one argument.
-//                                    1. (string type) To get the error
-//                                       message
+//      Usage : obj.connect([opt])
+//              - opt .. Option parameter object. You can contain the
+//                       following properties.
+//                       (1) Callback functions
+//                         [cbConnected]   : Callback function that is called
+//                                           when connected successfully.
+//                         [cbDisconnected]: Callback function that is called
+//                                           when dicconnected normally. When
+//                                           you do not omit the "onKilled,"
+//                                           this value will be copied to it.
+//                         [cbKilled]      : Callback function that is called
+//                                           when dicconnected unintentionally.
+//                                           In case you need to reconnect,
+//                                           you can use this callback as a
+//                                           trigger.
+//                                           If you do not give me a valid
+//                                           value, the value of the
+//                                           "onDisconnected" will be copied.
+//                         [cbFailed]      : Callback function that is called
+//                                           when failed to connect to the
+//                                           broker. This function accept one
+//                                           argument.
+//                                             1. (string type) To get the error
+//                                                message
+//                       (2) "Will message" parameters (optional)
+//                         [will].topic    : Topic name (string type) for
+//                                           the will message. (Mandatory when
+//                                           you set the "will" property)
+//                         [will].message  : Message body (string type)
+//                                           for the will message. (Mandatory
+//                                           when you set the "will" property)
+//                         [will].[qos]    : MQTT QoS for the will message.
+//                                           (You can omit this)
+//                         [will].[retain] : MQTT Retain flag for the will
+//                                           message. (You can omit this)
 //      Return: Nothing.
 //      Desc. : This method will try to establish the connection when you
 //              call. And these callback functions will start being called
@@ -151,19 +168,23 @@
 //              The function will be unregistered when you call this method
 //              with no argument or null value.
 //  * <Function> subcscribe()
-//      Usage : ret = obj.subcscribe(topicname);
-//              - ret ........ Boolean variable to receive whether success
-//                             or failure.
-//              - obj ........ Variable stocking the object instance.
-//              - topicname .. Topic name (string type) to subscribe.
+//      Usage : ret = obj.subcscribe(topic, [opt]);
+//              - ret .... Boolean variable to receive whether success
+//                         or failure.
+//              - obj .... Variable stocking the object instance.
+//              - topic .. Topic name (string type) to subscribe.
+//              - opt ...... Option parameter object. You can contain the
+//                           following properties.
+//                             [qos]    : MQTT QoS. (Number type, 0, 1,
+//                                        or 2. Default is 0)
 //      Return: Returns true when this method can call the wrapping
 //              "subscribe()" method. (However, it does not mean that
 //              it succeeded in getting the acknowledgment for the request)
 //              The cases in this method return false are:
 //              - When the connection is not established.
-//              - When the "topicname" is omitted.
-//              - When the "topicname" is neither a string nor a number.
-//              - When the "topicname" is empty.
+//              - When the "topic" is omitted.
+//              - When the "topic" is neither a string nor a number.
+//              - When the "topic" is empty.
 //      Desc. : Start subscribing to the MQTT topic. And the callback
 //              function registerd by the "setReceiverCallback()" method
 //              will start being called.
@@ -174,40 +195,46 @@
 //              method just after calling the "connect()" method because
 //              the connection is not established yet.
 //  * <Function> unsubcscribe()
-//      Usage : ret = obj.subcscribe(topicname);
-//              - ret ........ Boolean variable to receive whether success
-//                             or failure.
-//              - obj ........ Variable stocking the object instance.
-//              - topicname .. Topic name (string type) to subscribe.
+//      Usage : ret = obj.subcscribe(topic);
+//              - ret .... Boolean variable to receive whether success
+//                         or failure.
+//              - obj .... Variable stocking the object instance.
+//              - topic .. Topic name (string type) to subscribe.
 //      Return: Returns true when this method can call the wrapping
 //              "unsubscribe()" method. (However, it does not mean that
 //              it succeeded in getting the acknowledgment for the request)
 //              The cases this method returns false are:
 //              - When the connection is not established.
-//              - When the "topicname" is omitted.
-//              - When the "topicname" is neither a string nor a number.
-//              - When the "topicname" is empty.
+//              - When the "topic" is omitted.
+//              - When the "topic" is neither a string nor a number.
+//              - When the "topic" is empty.
 //      Desc. : Finish subscribing to the MQTT topic. And the callback
 //              function registerd by the "setReceiverCallback()" method
 //              will finish being called.
-//              You have to specify the same topicname as when you set it
-//              by calling the "subscribe()" method. Otherwise, maybe you
-//              cannot stop the subscribing.
+//              You have to specify the same topic as when you set it
+//              by calling the "subscribe()" method. Otherwise, maybe
+//              you cannot stop the subscribing.
 //  * <Function> publish()
-//      Usage : ret = obj.publish(topicname, message);
-//              - ret ........ Boolean variable to receive whether success
-//                             or failure.
-//              - obj ........ Variable stocking the object instance.
-//              - topicname .. Topic name (string type) to subscribe.
-//              - message .... Message body (string type) to publish.
+//      Usage : ret = obj.publish(topic, message, opt);
+//              - ret ...... Boolean variable to receive whether success
+//                           or failure.
+//              - obj ...... Variable stocking the object instance.
+//              - topic .... Topic name (string type) to publish.
+//              - message .. Message body (string type) to publish.
+//              - opt ...... Option parameter object. You can contain the
+//                           following properties.
+//                             [qos]    : MQTT QoS. (Number type, 0, 1,
+//                                        or 2. Default is 0)
+//                             [retain] : MQTT Retain flag. (Boolean type,
+//                                        true or false. Default is false)
 //      Return: Returns true when this method can call the wrapping
 //              "publish()" method. (However, it does not mean that it
 //              succeeded in getting the acknowledgment for the request)
 //              The cases this method returns false are:
 //              - When the connection is not established.
-//              - When the "topicname" is omitted.
-//              - When the "topicname" is neither a string nor a number.
-//              - When the "topicname" is empty.
+//              - When the "topic" is omitted.
+//              - When the "topic" is neither a string nor a number.
+//              - When the "topic" is empty.
 //              - When the "message" is omitted.
 //              - When the "message" is neither a string nor a number.
 //      Desc. : Publish a message to the topic channel specified the
@@ -274,25 +301,45 @@ var MQTTwrapper = null;
     // https://github.com/mqttjs/MQTT.js#api (reference manual)
     return class MQTTwrapper {
       static sLibname = 'MQTT.js';
-      constructor(sUrl) {
+      constructor(sUrl, sClientId) {
+        sUrl      = (typeof sUrl      === 'string') ? sUrl      : ''                                                 ;
+        sClientId = (typeof sClientId === 'string') ? sClientId : 'mqttjs_' + Math.random().toString(16).substr(2, 8);
         if (typeof sUrl !== 'string') {return null;}
-        this.sUrl       = sUrl ;
-        this.bConnected = false;
-        this.oClient    = null ;
-        this.bShutting  = false;
+        this.sUrl       = sUrl     ;
+        this.sClientId  = sClientId;
+        this.bConnected = false    ;
+        this.oClient    = null     ;
+        this.bShutting  = false    ;
       }
-      connect(fCBconnected,fCBdisconnected,fCBkilled,fCBerror) {
-        let that = this;
-        this.bShutting       = false                                                                           ;
-        this.fCBconnected    = (typeof fCBconnected    === 'function') ? fCBconnected    : null                ;
-        this.fCBdisconnected = (typeof fCBdisconnected === 'function') ? fCBdisconnected : null                ;
-        this.fCBkilled       = (typeof fCBkilled       === 'function') ? fCBkilled       : this.fCBdisconnected;
-        this.fCBerror        = (typeof fCBerror        === 'function') ? fCBerror        : null                ;
-        this.fCBreceiver     =                                             null;
+      connect(oOpt) {
+        let that             = this;
+        let o                = new Object();
+        oOpt                 = (typeof oOpt === 'object') ? oOpt : new Object();
+        this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
+        this.fCBdisconnected = (('cbDisconnected' in oOpt) && (typeof oOpt.cbDisconnected === 'function')) ? oOpt.cbDisconnected : null;
+        this.fCBkilled       = (('cbKilled'       in oOpt) && (typeof oOpt.cbKilled       === 'function')) ? oOpt.cbKilled       : null;
+        this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
+        this.bShutting       = false;
+        this.fCBreceiver     = null;
+        o['reconnectPeriod'] = 0;               // Disable reconnection for compatibility with other libraries
+        o['clientId'       ] = this.sClientId;
+        if ('will' in oOpt) {
+          if ((!('topic'   in oOpt.will))||(typeof oOpt.will.topic   !== 'string')) {
+            throw new Error('MQTT.js: Will message data has no topic name.');
+          }
+          if ((!('message' in oOpt.will))||(typeof oOpt.will.message !== 'string')) {
+            throw new Error('MQTT.js: Will message data has no message.'   );
+          }
+          o['will'] = new Object();
+          o.will['topic'  ] = oOpt.will.topic;
+          o.will['payload'] = oOpt.will.message;
+          o.will['qos'    ] = (('qos'    in oOpt.will) && (typeof oOpt.will.qos    === 'number' )) ? oOpt.will.qos    : 0    ;
+          o.will['qos'    ] = (('retain' in oOpt.will) && (typeof oOpt.will.retain === 'boolean')) ? oOpt.will.retain : false;
+        }
         //
         try {
-          this.oClient = mqtt.connect(this.sUrl,{"reconnectPeriod":0});
-            // Disable reconnection for compatibility with other libraries
+          this.oClient = mqtt.connect(this.sUrl,o);
+            
         } catch (o) {
           that.bShutting = false;
           console.error('MQTTwrapper: MQTT.js: connection error: '+o.message);
@@ -343,7 +390,8 @@ var MQTTwrapper = null;
         this.bShutting = true;
         this.oClient.end();
       }
-      publish(sTopic,sMessage) {
+      publish(sTopic,sMessage,oOpt) {
+        oOpt = (typeof oOpt === 'object') ? oOpt : new Object();
         if (! this.oClient              ) {return false;}
         if (! this.bConnected           ) {return false;}
         sTopic   = (typeof sTopic   === 'number') ?   sTopic.toString() : sTopic  ;
@@ -351,7 +399,7 @@ var MQTTwrapper = null;
         if (sTopic          === ''      ) {return false;}
         sMessage = (typeof sMessage === 'number') ? sMessage.toString() : sMessage;
         if (typeof sMessage !== 'string') {return false;}
-        this.oClient.publish(sTopic,sMessage);
+        this.oClient.publish(sTopic,sMessage,oOpt);
         return true;
       }
       setReceiverCallback(fCB) {
@@ -360,13 +408,14 @@ var MQTTwrapper = null;
         else if (typeof fCB === 'function' ) {this.fCBreceiver = fCB ; return true ;}
         else                                 {                         return false;}
       }
-      subscribe(sTopic) {
+      subscribe(sTopic, oOpt) {
+        oOpt = (typeof oOpt === 'object') ? oOpt : new Object();
         if (! this.oClient            ) {return false;}
         if (! this.bConnected         ) {return false;}
         sTopic   = (typeof sTopic   === 'number') ?   sTopic.toString() : sTopic  ;
         if (typeof sTopic !== 'string') {return false;}
         if (sTopic === ''             ) {return false;}
-        this.oClient.subscribe(sTopic);
+        this.oClient.subscribe(sTopic, oOpt);
         return true;
       }
       unsubscribe(sTopic) {
@@ -388,9 +437,11 @@ var MQTTwrapper = null;
     // https://lipoyang.hatenablog.com/entry/2019/03/05/110524 (example)
     return class MQTTwrapper {
       static sLibname = 'Paho';
-      constructor(sUrl) {
+      constructor(sUrl, sClientId) {
         let bSecure, sId, sPasswd, sHost, iPort, sPath, oU8e, s, s1, that;
         //
+        sUrl      = (typeof sUrl      === 'string') ? sUrl      : ''                                   ;
+        sClientId = (typeof sClientId === 'string') ? sClientId : 'web_'+parseInt(Math.random()*100,10);
         oU8e    = new TextDecoder("utf-8");
         //
         bSecure = (sUrl.match(/^wss:/)) ? true : false;
@@ -406,7 +457,7 @@ var MQTTwrapper = null;
         s       = sUrl.replace(/^wss?:\/\/[^\/]+/,'');
         sPath   = (s!=='') ? s : '/';
         //
-        this.oPaho = new Paho.MQTT.Client(sHost, iPort, sPath, 'web_'+parseInt(Math.random()*100,10));
+        this.oPaho = new Paho.MQTT.Client(sHost, iPort, sPath, sClientId);
         if (! this.oPaho) {return null;}
         this.bSecure                = bSecure;
         this.sId                    = sId    ;
@@ -461,20 +512,35 @@ var MQTTwrapper = null;
                                                                 oMessage.destinationName           );
                                       };
       }
-      connect(fCBconnected,fCBdisconnected,fCBkilled,fCBerror) {
-        this.bShutting       = false                                                                           ;
-        this.fCBconnected    = (typeof fCBconnected    === 'function') ? fCBconnected    : null                ;
-        this.fCBdisconnected = (typeof fCBdisconnected === 'function') ? fCBdisconnected : null                ;
-        this.fCBkilled       = (typeof fCBkilled       === 'function') ? fCBkilled       : this.fCBdisconnected;
-        this.fCBerror        = (typeof fCBerror        === 'function') ? fCBerror        : null                ;
+      connect(oOpt) {
+        let o                = new Object();
+        oOpt                 = (typeof oOpt === 'object') ? oOpt : new Object();
+        this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
+        this.fCBdisconnected = (('cbDisconnected' in oOpt) && (typeof oOpt.cbDisconnected === 'function')) ? oOpt.cbDisconnected : null;
+        this.fCBkilled       = (('cbKilled'       in oOpt) && (typeof oOpt.cbKilled       === 'function')) ? oOpt.cbKilled       : null;
+        this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
+        this.bShutting       = false                                                                                                   ;
+        o['useSSL'   ]       = this.bSecure                                                                                            ;
+        o['userName' ]       = this.sId                                                                                                ;
+        o['password' ]       = this.sPasswd                                                                                            ;
+      //o['reconnect']       = true;        // Unsupported even though the API doc mentions it.
+        o['onSuccess']       = this.fSucessHook                                                                                        ;
+        o['onFailure']       = this.fErrorHook                                                                                         ;
+        if ('will' in oOpt) {
+          if ((!('topic'   in oOpt.will))||(typeof oOpt.will.topic   !== 'string')) {
+            throw new Error('Paho: Will message data has no topic name.');
+          }
+          if ((!('message' in oOpt.will))||(typeof oOpt.will.message !== 'string')) {
+            throw new Error('Paho: Will message data has no message.'   );
+          }
+          o['willMessage'] = new Paho.MQTT.Message(oOpt.will.message);
+          o.willMessage['destinationName'] = oOpt.will.topic;
+          o.willMessage['qos'            ] = (('qos'    in oOpt.will) && (typeof oOpt.will.qos    === 'number' )) ? oOpt.will.qos      : 0    ;
+          o.willMessage['retained'       ] = (('retain' in oOpt.will) && (typeof oOpt.will.retain === 'boolean')) ? oOpt.will.retained : false;
+y        }
         //
         try {
-          this.oPaho.connect({   useSSL    : this.bSecure    ,
-                                 userName  : this.sId        ,
-                                 password  : this.sPasswd    ,
-                               //reconnect : true            , // Unsupported even though the API doc mentions it.
-                                 onSuccess : this.fSucessHook,
-                                 onFailure : this.fErrorHook });
+          this.oPaho.connect(o);
         } catch (o) {
           this.fErrorHook({"errorCode":('code' in o)?o.code:-1,"errorMessage":o.message});
         }
@@ -484,14 +550,17 @@ var MQTTwrapper = null;
         try      {this.oPaho.disconnect();} // This try-catch is to ensure
         catch(e) {                       ;} // calling this method is always
       }                                     // safe even when not connected.
-      publish(sTopic,sMessage) {
+      publish(sTopic,sMessage,oOpt) {
+        oOpt = (typeof oOpt === 'object') ? oOpt : new Object();
+        let iQos    = ("qos"    in oOpt) ? oOpt['qos'   ] : 0    ;
+        let bRetain = ("retain" in oOpt) ? oOpt['retain'] : false;
         if (! this.bConnected           ) {return false;}
         sTopic   = (typeof sTopic   === 'number') ?   sTopic.toString() : sTopic  ;
         if (typeof sTopic   !== 'string') {return false;}
         if (sTopic          === ''      ) {return false;}
         sMessage = (typeof sMessage === 'number') ? sMessage.toString() : sMessage;
         if (typeof sMessage !== 'string') {return false;}
-        this.oPaho.send(sTopic,sMessage);
+        this.oPaho.send(sTopic,sMessage,iQos,bRetain);
         return true;
       }
       setReceiverCallback(fCB) {
@@ -500,12 +569,13 @@ var MQTTwrapper = null;
         else if (typeof fCB === 'function' ) {this.fCBreceiver = fCB ; return true ;}
         else                                 {                         return false;}
       }
-      subscribe(sTopic) {
+      subscribe(sTopic,oOpt) {
+        oOpt = (typeof oOpt === 'object') ? oOpt : new Object();
         if (! this.bConnected         ) {return false;}
         sTopic   = (typeof sTopic   === 'number') ?   sTopic.toString() : sTopic  ;
         if (typeof sTopic !== 'string') {return false;}
         if (sTopic === ''             ) {return false;}
-        this.oPaho.subscribe(sTopic);
+        this.oPaho.subscribe(sTopic, oOpt);
         return true;
       }
       unsubscribe(sTopic) {
