@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-21
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-22
 //
 // ===================================================================
 //
@@ -318,7 +318,7 @@ var MQTTwrapper = null;
         this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
         this.fCBdisconnected = (('cbDisconnected' in oOpt) && (typeof oOpt.cbDisconnected === 'function')) ? oOpt.cbDisconnected : null;
         this.fCBkilled       = (('cbKilled'       in oOpt) && (typeof oOpt.cbKilled       === 'function')) ? oOpt.cbKilled       : null;
-        this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
+        this.fCBerror        = (('cbFailed'       in oOpt) && (typeof oOpt.cbFailed       === 'function')) ? oOpt.cbFailed       : null;
         this.bShutting       = false;
         this.fCBreceiver     = null;
         o['reconnectPeriod'] = 0;               // Disable reconnection for compatibility with other libraries
@@ -518,7 +518,7 @@ var MQTTwrapper = null;
         this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
         this.fCBdisconnected = (('cbDisconnected' in oOpt) && (typeof oOpt.cbDisconnected === 'function')) ? oOpt.cbDisconnected : null;
         this.fCBkilled       = (('cbKilled'       in oOpt) && (typeof oOpt.cbKilled       === 'function')) ? oOpt.cbKilled       : null;
-        this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
+        this.fCBerror        = (('cbFailed'       in oOpt) && (typeof oOpt.cbFailed       === 'function')) ? oOpt.cbFailed       : null;
         this.bShutting       = false                                                                                                   ;
         o['useSSL'   ]       = this.bSecure                                                                                            ;
         o['userName' ]       = this.sId                                                                                                ;
