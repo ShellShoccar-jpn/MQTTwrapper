@@ -334,7 +334,7 @@ var MQTTwrapper = null;
           o.will['topic'  ] = oOpt.will.topic;
           o.will['payload'] = oOpt.will.message;
           o.will['qos'    ] = (('qos'    in oOpt.will) && (typeof oOpt.will.qos    === 'number' )) ? oOpt.will.qos    : 0    ;
-          o.will['qos'    ] = (('retain' in oOpt.will) && (typeof oOpt.will.retain === 'boolean')) ? oOpt.will.retain : false;
+          o.will['retain' ] = (('retain' in oOpt.will) && (typeof oOpt.will.retain === 'boolean')) ? oOpt.will.retain : false;
         }
         //
         try {
