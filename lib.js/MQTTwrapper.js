@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-22
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-23
 //
 // ===================================================================
 //
@@ -51,14 +51,20 @@
 //       -----
 //       client = new MQTTwrapper('ws://broker.mqttdashboard.com:8000/mqtt');
 //       if (client) {
-//         client.connect(
-//           function(){console.log('Connected'                       );
-//                      client.subscribe('testtopic/#'                );
-//                      client.publish('test/channel1','Hello, world!');},
-//           function(){console.log('Discnnected normally'            );},
-//           function(){console.log('Discnnected abnomally'           );},
-//           function(){console.log('Failed to connect'               );}
-//         );
+//         client.connect({
+//           "cbConnected"   :
+//             function(){console.log('Connected'                       );
+//                        client.subscribe('testtopic/#'                );
+//                        client.publish('testtopic/ch1','Hello, world!');},
+//           "cbDisconnected":
+//             function(){console.log('Discnnected normally'            );},
+//           "cbKilled"      :
+//             function(){console.log('Discnnected abnomally'           );},
+//           "cbFailed"      :
+//             function(){console.log('Failed to connect'               );},
+//           "will"          : {"topic"  :"testtopic/ch1"                ,
+//                              "message":"Disconnected by some trouble." }
+//         });
 //         client.setReceiverCallback(
 //           function(message,topic){console.log(topic+':'+message);}
 //         );
@@ -146,15 +152,25 @@
 //              It is meaningless to call this method when you had not
 //              called the "connect()" method, but also harmless.
 //  * <Function> setReceiverCallback()
-//      Usage : ret = obj.setReceiverCallback([onMsgReceived]);
-//              - ret ............ Boolean variable to receive success or
-//                                 failure.
-//              - obj ............ Variable stocking the object instance.
-//              - onMsgReceived .. Callback function that is called when
-//                                 a message string has arrived.
-//                                 This function accept two argument.
-//                                   1. (string type) To get the message body
-//                                   2. (string type) To get the topic name
+//      Usage : ret = obj.setReceiverCallback([cbReceived]);
+//              - ret ......... Boolean variable to receive success or
+//                              failure.
+//              - obj ......... Variable stocking the object instance.
+//              - cbReceived .. Callback function that is called when
+//                              a message string has arrived.
+//                              This function accepts three arguments.
+//                                1. (string type) To get the message body.
+//                                2. (string type) To get the topic name.
+//                                3. (object type) To get other info.
+//                                   This object has the following
+//                                   properties.
+//                                     qos    : (number type) MQTT QoS
+//                                              parameter. (0,1,2)
+//                                     retain : (boolean type) MQTT retain
+//                                              flag. (true/false)
+//                                   Other properties are also visible,
+//                                   but you must not depend on them.
+//                                   They are only for debugging.
 //      Return: Returns true when this method registers/unregisters the
 //              callback function successfully. Or returns false when
 //              something wrong happens.
@@ -219,14 +235,14 @@
 //              - ret ...... Boolean variable to receive whether success
 //                           or failure.
 //              - obj ...... Variable stocking the object instance.
-//              - topic .... Topic name (string type) to publish.
-//              - message .. Message body (string type) to publish.
+//              - topic .... (string type) Topic name to publish.
+//              - message .. (string type) Message body to publish.
 //              - opt ...... Option parameter object. You can contain the
 //                           following properties.
-//                             [qos]    : MQTT QoS. (Number type, 0, 1,
+//                             [qos]    : (Number type) MQTT QoS. (0, 1,
 //                                        or 2. Default is 0)
-//                             [retain] : MQTT Retain flag. (Boolean type,
-//                                        true or false. Default is false)
+//                             [retain] : (Boolean type) MQTT Retain flag.
+//                                        (true or false. Default is false)
 //      Return: Returns true when this method can call the wrapping
 //              "publish()" method. (However, it does not mean that it
 //              succeeded in getting the acknowledgment for the request)
@@ -382,7 +398,7 @@ var MQTTwrapper = null;
         this.oClient.on('message', (sTopic, sMessage, oPacket) => {
           if (typeof oPacket === 'undefined') {return;}
           if (typeof that.fCBreceiver !== 'function') {return false;}
-          return that.fCBreceiver(sMessage,sTopic);
+          return that.fCBreceiver(sMessage,sTopic,oPacket);
         });
       }
       disconnect() {
@@ -508,8 +524,10 @@ var MQTTwrapper = null;
                                         //   suspends the processing.
                                         //   That behavior is unfavorable for
                                         //   this class.
+                                        if ('retained' in oMessage) {oMessage['retain']=oMessage.retained;}
                                         return that.fCBreceiver(oU8e.decode(oMessage.payloadBytes),
-                                                                oMessage.destinationName           );
+                                                                oMessage.destinationName          ,
+                                                                oMessage                           );
                                       };
       }
       connect(oOpt) {
