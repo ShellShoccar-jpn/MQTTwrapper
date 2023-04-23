@@ -242,7 +242,8 @@
 //                           or failure.
 //              - obj ...... Variable stocking the object instance.
 //              - topic .... (string type) Topic name to publish.
-//              - message .. (string type) Message body to publish.
+//              - message .. (number or string or Uint8Array type)
+//                           Message body to publish.
 //              - opt ...... Option parameter object. You can contain the
 //                           following properties.
 //                             [qos]    : (Number type) MQTT QoS. (0, 1,
@@ -414,16 +415,16 @@ var MQTTwrapper = null;
         this.bShutting = true;
         this.oClient.end();
       }
-      publish(sTopic,sMessage,oOpt) {
+      publish(sTopic,Message,oOpt) {
         oOpt = (typeof oOpt === 'object') ? oOpt : new Object();
         if (! this.oClient              ) {return false;}
         if (! this.bConnected           ) {return false;}
         sTopic   = (typeof sTopic   === 'number') ?   sTopic.toString() : sTopic  ;
         if (typeof sTopic   !== 'string') {return false;}
         if (sTopic          === ''      ) {return false;}
-        sMessage = (typeof sMessage === 'number') ? sMessage.toString() : sMessage;
-        if (typeof sMessage !== 'string') {return false;}
-        this.oClient.publish(sTopic,sMessage,oOpt);
+        Message = (typeof Message === 'number') ? Message.toString() : Message;
+        if (typeof Message === 'undefined') {return false;}
+        this.oClient.publish(sTopic,Message,oOpt);
         return true;
       }
       setReceiverCallback(fCB) {
@@ -576,7 +577,7 @@ var MQTTwrapper = null;
         try      {this.oPaho.disconnect();} // This try-catch is to ensure
         catch(e) {                       ;} // calling this method is always
       }                                     // safe even when not connected.
-      publish(sTopic,sMessage,oOpt) {
+      publish(sTopic,Message,oOpt) {
         oOpt = (typeof oOpt === 'object') ? oOpt : new Object();
         let iQos    = ("qos"    in oOpt) ? oOpt['qos'   ] : 0    ;
         let bRetain = ("retain" in oOpt) ? oOpt['retain'] : false;
@@ -584,9 +585,9 @@ var MQTTwrapper = null;
         sTopic   = (typeof sTopic   === 'number') ?   sTopic.toString() : sTopic  ;
         if (typeof sTopic   !== 'string') {return false;}
         if (sTopic          === ''      ) {return false;}
-        sMessage = (typeof sMessage === 'number') ? sMessage.toString() : sMessage;
-        if (typeof sMessage !== 'string') {return false;}
-        this.oPaho.send(sTopic,sMessage,iQos,bRetain);
+        Message = (typeof Message === 'number') ? Message.toString() : Message;
+        if (typeof Message === 'undefined') {return false;}
+        this.oPaho.send(sTopic,Message,iQos,bRetain);
         return true;
       }
       setReceiverCallback(fCB) {
