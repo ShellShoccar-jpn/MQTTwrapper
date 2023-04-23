@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-23
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-24
 //
 // ===================================================================
 //
@@ -168,6 +168,12 @@
 //                                              parameter. (0,1,2)
 //                                     retain : (boolean type) MQTT retain
 //                                              flag. (true/false)
+//                                     payloadBytes :
+//                                              (Uint8Array type) The
+//                                              message body. It means
+//                                              the same data as the first
+//                                              argument but with a
+//                                              different data type.
 //                                   Other properties are also visible,
 //                                   but you must not depend on them.
 //                                   They are only for debugging.
@@ -329,6 +335,7 @@ var MQTTwrapper = null;
       }
       connect(oOpt) {
         let that             = this;
+        let oU8e             = new TextDecoder("utf-8");
         let o                = new Object();
         oOpt                 = (typeof oOpt === 'object') ? oOpt : new Object();
         this.fCBconnected    = (('cbConnected'    in oOpt) && (typeof oOpt.cbConnected    === 'function')) ? oOpt.cbConnected    : null;
@@ -395,10 +402,11 @@ var MQTTwrapper = null;
           return that.fCBerror(error+'');
         });
         //
-        this.oClient.on('message', (sTopic, sMessage, oPacket) => {
+        this.oClient.on('message', (sTopic, oMessage, oPacket) => {
           if (typeof oPacket === 'undefined') {return;}
           if (typeof that.fCBreceiver !== 'function') {return false;}
-          return that.fCBreceiver(sMessage,sTopic,oPacket);
+          oPacket['payloadBytes']=oMessage;
+          return that.fCBreceiver(oU8e.decode(oMessage),sTopic,oPacket);
         });
       }
       disconnect() {
