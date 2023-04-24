@@ -157,6 +157,12 @@ See the reference section for detail.
                                             parameter. (0,1,2)
                                    retain : (boolean type) MQTT retain
                                             flag. (true/false)
+                                   payloadBytes :
+                                            (Uint8Array type) The
+                                            message body. It means
+                                            the same data as the first
+                                            argument but with a
+                                            different data type.
                                  Other properties are also visible,
                                  but you must not depend on them.
                                  They are only for debugging.
@@ -225,7 +231,8 @@ See the reference section for detail.
                          or failure.
             - obj ...... Variable stocking the object instance.
             - topic .... (string type) Topic name to publish.
-            - message .. (string type) Message body to publish.
+            - message .. (number or string or Uint8Array type)
+                         Message body to publish.
             - opt ...... Option parameter object. You can contain the
                          following properties.
                            [qos]    : (Number type) MQTT QoS. (0, 1,
