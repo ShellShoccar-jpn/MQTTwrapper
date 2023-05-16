@@ -43,14 +43,14 @@ The current names you can specify are only "MQTT.js" and "Paho." Be careful of t
 ```Javascript:example1
 client = new MQTTwrapper('ws://broker.mqttdashboard.com:8000/mqtt');
 if (client) {
-  client.connect(
-    function(){console.log('Connected'                       );
-               client.subscribe('testtopic/#'                );
-               client.publish('test/channel1','Hello, world!');},
-    function(){console.log('Discnnected normally'            );},
-    function(){console.log('Discnnected suddenly'            );},
-    function(){console.log('Failed to connect'               );}
-  );
+  client.connect({
+    "cbConnected"   :()=>{console.log('Connected'                       );
+                          client.subscribe('testtopic/#'                );
+                          client.publish('test/channel1','Hello, world!');},
+    "cbDisconnected":()=>{console.log('Discnnected normally'            );},
+    "cbKilled"      :()=>{console.log('Discnnected suddenly'            );},
+    "cbFailed"      :()=>{console.log('Failed to connect'               );}
+  });
   client.setReceiverCallback(
     function(message,topic){console.log(topic+':'+message);}
   );
