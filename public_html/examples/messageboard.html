@@ -2,11 +2,21 @@
 <!--
 ######################################################################
 #
-# realtimechart.html:
-#   An Example to Try the MQTTwrapper Class (with a Chart)
+# MESSAGEBOARD.HTML:
+#   A Japanese Nostalgic Message Board (MQTTwrapper Class Demo)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-21
+# +--- <<Mess up the board with command via MQTT>> -------------------
+# |
+# | This "messageboard.html" becomes an MQTT subscriber and receives
+# | some kinds of commands via MQTT to update messages on the board.
+# |
+# | You may freely rewrite the content of the board. So, publish a lot
+# | of commands from your UNIX terminal to rewrite the message and mess up
+# | the message board!
+# +-------------------------------------------------------------------
 #
+#
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-12
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -18,31 +28,63 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>MQTTwrapper Class Demo (with a Chart)</title>
+  <title>Japanese Nostalgic Message Board (MQTTwrapper Class Demo)</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <script src="../lib.js/MQTTwrapper.js">{"order":["Paho","MQTT.js"]}</script>
-  <!-- for chartjs-plugin-streaming -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.3.2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/luxon@1.27.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@2.0.0"></script>
-  <!-- /for chartjs-plugin-streaming -->
+  <!-- Style for the message board -->
+  <style>
+  #tablecontainer { background      : #15471D;
+                    width           : 640px;
+                    margin          : 0;
+                    padding         : 5px;               }
+  #msgboardtitle  { 
+                    margin          : 0;
+                    text-align      : center;
+                    color           : white;
+                    font-size       : xx-large;
+                  }
+  table.dengonban { border          : 0
+                    padding         : 0
+                    border-spacing  : 0
+                    width           : 100%;
+                    table-layout    : fixed;
+                    border-collapse : collapse;
+                    text-align      : center;
+                    vertical-align  : middle;
+                    color           : white;
+                    overflow        : hidden;            }
+  .posmark        { color           : #ffc0c0;
+                    font-size       : smaller;           }
+  .coltitle       { font-size       : x-large;
+                    font-family     : "Yu Gothic";
+                    border          : 1px solid white;   }
+  .msgbody        { font-size       : normal;
+                    border          : 1px solid white;   }
+  .warning        { font-size       : small;
+                    border-top      : 1px solid white;
+                    border-right    : none;
+                    border-bottom   : none;
+                    border-left     : none;              }
+  .bodyrow        { height          : 2.5em;             }
+  </style>
+  <!-- /Style for the message board -->
 </head>
 
 <body>
-  <h1>MQTTwrapper Class Demo (with a Chart)</h1>
+  <h1>Japanese Nostalgic Message Board (MQTTwrapper Class Demo)</h1>
   <p id="which_library">(No library is wrapped...)</p>
+  <p><a href=".">Go back to example list</a></p>
 
-  <h2>HOST (Where is the Broker):</h2>
+  <h2>HOST (Where is the broker):</h2>
   <div>
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot" onchange="WS_warning()"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
+        <select id="prot" onchange="WS_warning()"><option>ws</option><option selected="selected">wss</option></select>://<input type="text" id="addr" value="mqtt0.usp-lab.com" size="20" />:<input type="text" id="port" value="8443" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
       </dd>
       <dd>
-        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset()"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
+        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset(this.selectedIndex)"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
       </dd>
     </dl>
     <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
@@ -51,14 +93,14 @@
 
   <h2>SEND (Behave as a Publisher):</h2>
   <div>
-    topic = <input type="text" id="sendtopic" value="test"   size="20" /><br/>
+    topic = <input type="text" id="sendtopic" value="dengon"   size="20" /><br/>
     <textarea id="sendbox"  style="width:40em; height:calc(1.3em*3); line-height:1.3;"></textarea><br/>
     <input type="button" id="publishbutton" value="Publish" onclick="Publish()" disabled="disabled" />
   </div>
 
   <h2>RECV (Behave as a Subscriber):</h2>
   <div>
-    topic = <input type="text" id="recvtopic" value="test/#" size="20" /><br/>
+    topic = <input type="text" id="recvtopic" value="dengon" size="20" /><br/>
     <textarea id="recvbox"  style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly"></textarea><br/>
     <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
     <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
@@ -66,33 +108,69 @@
     <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
   </div>
 
-  <h2>Chart (Pick Up from the Subscriber):</h3>
-  <div style="width:640px;">
-    <canvas id="DobleLineChart"></canvas>
+  <h2>Message Board (Pick up from the subscriber):</h3>
+  <div id="tablecontainer">
+    <h3 id="msgboardtitle">伝言板</h3>
+    <table class="dengonban">
+      <tr>
+        <td class="posmark" style='width:15px' >&nbsp;</td>
+        <td class="posmark" style='width:75px' >a</td>
+        <td class="posmark" style='width:75px' >b</td>
+        <td class="posmark" style='width:460px'>c</td>
+      </tr>
+      <tr>
+        <td class="posmark">1</td>
+        <th id="a1" class="coltitle">月日</td>
+        <th id="b1" class="coltitle" style='border-left:none'>時分</td>
+        <th id="c1" class="coltitle" style='border-left:none'>ご用件</td>
+      </tr>
+      <tr>
+        <td class="posmark">2</td>
+        <td id="a2" class="msgbody bodyrow" style='border-top:none'>5/19</td>
+        <td id="b2" class="msgbody bodyrow" style='border-top:none;border-left:none'>11:10</td>
+        <td id="c2" class="msgbody bodyrow" style='border-top:none;border-left:none'>西新橋には先に行ってるね。by RM</td>
+      </tr>
+      <tr>
+        <td class="posmark">3</td>
+        <td id="a3" class="msgbody bodyrow" style='border-top:none'>&nbsp;</td>
+        <td id="b3" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
+        <td id="c3" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
+      </tr>
+      <tr>
+        <td class="posmark">4</td>
+        <td id="a4" class="msgbody bodyrow" style='border-top:none'>&nbsp;</td>
+        <td id="b4" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
+        <td id="c4" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
+      </tr>
+      <tr>
+        <td class="posmark">5</td>
+        <td id="a5" class="msgbody bodyrow" style='border-top:none'>&nbsp;</td>
+        <td id="b5" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
+        <td id="c5" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <td colspan="3" class="warning">3日過ぎたものは消します。</td>
+      </tr>
+    </table>
   </div>
   <p>
-    Data will be plotted on the chart when the above subscriber receives it if the data is formatted like the following.
+    This HTML program (re)writes the message into the message board after the above subscriber has received the following command.
   </p>
-  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">plot <i>n</i>1 <i>n</i>2</blockquote>
+  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">write <i>xy</i> <i>msg</i></blockquote>
   <dl>
-    <dt><i>n</i>1</dt><dd>for Dataset A (real-number, -10&lt;<i>n</i>1&lt;10)</dd>
-    <dt><i>n</i>2</dt><dd>for Dataset B (real-number, -10&lt;<i>n</i>2&lt;10)</dd>
+    <dt><i>x</i></dt><dd>Column Code: For instance, "<code>a</code>" means the date column because the column is at the leftmost and has the code "a." <strong>You have to specify with a row number in practice</strong>, like that "<code>a1</code>."</dd>
+    <dt><i>y</i></dt><dd>Row Number: For instance, "<code>1</code>" means the head line of the table because the head line is numbered one. <strong>You have to specify with a column code in practice</strong>, like that "<code>a1</code>."</dd>
+    <dt><i>msg</i></dt><dd>Message Text: You can contain space characters in the body of the text. And if you omit the whole part of the message text, the content in the corresponding cell will be erased.</dd>
   </dl>
 
+  <script src="mqttbrokers.js"></script>
   <script type="text/javascript">
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const oPreset = [ {"label":"Eclipse1"  , "desc":"Eclipse public MQTT broker"                          , "prot":0, "host":"mqtt.eclipseprojects.io" , "port":  80, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Eclipse2"  , "desc":"Eclipse public MQTT broker (TLS)"                    , "prot":1, "host":"mqtt.eclipseprojects.io" , "port": 443, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"EMQX1"     , "desc":"EMQX MQTT Public Broker"                             , "prot":0, "host":"broker.emqx.io"          , "port":8083, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"EMQX2"     , "desc":"EMQX MQTT Public Broker (TLS)"                       , "prot":1, "host":"broker.emqx.io"          , "port":8084, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ1"   , "desc":"HiveMQ Free Public broker"                           , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ2"   , "desc":"HiveMQ Free Public broker (TLS)"                     , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ3"   , "desc":"HiveMQ MQTT Browser Client"                          , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Mosquitto1", "desc":"Eclipse Mosquitto MQTT broker"                       , "prot":0, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Mosquitto2", "desc":"Eclipse Mosquitto MQTT broker (TLS)"                 , "prot":1, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"RichLab."  , "desc":"test broker by RichLab. (TLS, with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/chart", "subtopic":"example/chart"} ];
+    const sPubtopic = 'mwexample/msgboard';
+    const sSubtopic = 'mwexample/msgboard';
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -135,86 +213,34 @@
       eConn.disabled = false;
       eDcon.disabled = false;
     }
+    Preset(1);
     WS_warning();
     
     
     //////////////////////////////////////////////////////////////////
-    // Initialize for Chart.js
-    //////////////////////////////////////////////////////////////////
-    
-    let config = {
-      type: 'line',
-      data: {
-        datasets: [
-          {
-            label: 'Dataset A',
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-            borderColor: 'rgb(255, 99, 132)',
-            borderDash: [8, 4],
-            fill: true,
-            data: []
-          },
-          {
-            label: 'Dataset B',
-            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-            borderColor: 'rgb(54, 162, 235)',
-            cubicInterpolationMode: 'monotone',
-            fill: true,
-            data: []
-          }
-        ]
-      },
-      options: {
-        scales: {
-          x: {
-            type: 'realtime',
-            realtime: {
-              delay: 2000,
-            }
-          }
-        }
-      }
-    };
-    const oChart = new Chart(document.getElementById('DobleLineChart'),config);
-    
+    //
     // Parse and inject the incoming data into the chart
     // the data format assumed the following:
     //   * space-separated-data
     //   * three columns
-    //     1: "plot" keyword
-    //     2: value #1 (A, -10<A<10)
-    //     3: value #2 (B, -10<B<10)
+    //     1 : "write" keyword
+    //     2 : positon (e.g. "a1")
+    //    [3]: message string
     function parsinjector(sInData) {
       // Parse
-      let iFieldType = 2;
-      let lsInData;
+      let lsInData, sPos, sMsg, s, e;
       if (typeof sInData !== 'string') {return;}
+      sInData = sInData.replace(/\n.*$/,'');
+      if (! sInData.match(/^write +[A-Za-z][0-9]( +[^ ].*)?$/)) {return;}
+      s    = sInData.replace(/^write +/,'');
+      sPos = s.replace(/ .*$/,'').toLowerCase();
+      s    = s.replace(/^[^ ]+/,'');
+      sMsg = s.replace(/^[^ ]+ +/,'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/[']/g,'&lsquo;')                   ;
       
-      if (iFieldType === 1) {
-        //   * four-column-type (not used now)
-        //     1: YYYYMMDDhhmmss.nnn (Calendar time with 3 decimal points)
-        //     2: E.nnn              (UNIX epoch time with 3 decimal points)
-        //     3: value #1 (A, real-number, -10<A<10)
-        //     4: value #2 (B, real-number, -10<B<10)
-        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
-        lsInData = sInData.split(/\s+/);
-        oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[2]*1});
-        oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[3]*1});
-      }
-      if (iFieldType === 2) {
-        //   * three-column-type
-        //   * three columns
-        //     1: "plot" keyword
-        //     2: value #1 (A, real-number, -10<A<10)
-        //     3: value #2 (B, real-number, -10<B<10)
-        if (! sInData.match(/^plot +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
-        lsInData = sInData.split(/\s+/);
-        oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[1]*1});
-        oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[2]*1});
-      }
-      
-      // Update the chart
-      oChart.update('quiet');
+      // Write
+      e = document.getElementById(sPos);
+      if (! e) {return}
+      e.innerHTML = sMsg;
     }
 
     
@@ -318,17 +344,17 @@
       if ( eProt.selectedIndex==1                                                   ) {eWSwarn.style.display='none'  ;return;}
     }
     
-    function Preset() {
+    function Preset(iNum) {
       if ( typeof(oMQTTw)==='undefined'                            ||
           (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
-        if (ePreset.selectedIndex==0) {return;}
-        eProt.selectedIndex = oPreset[ePreset.selectedIndex-1].prot    ;
-        eAddr.value         = oPreset[ePreset.selectedIndex-1].host    ;
-        ePort.value         = oPreset[ePreset.selectedIndex-1].port    ;
-        ePath.value         = oPreset[ePreset.selectedIndex-1].path    ;
-        eSendtopic.value    = oPreset[ePreset.selectedIndex-1].pubtopic;
-        eRecvtopic.value    = oPreset[ePreset.selectedIndex-1].subtopic;
-        WS_warning(oPreset[ePreset.selectedIndex-1].prot);
+        if (iNum==0) {return;}
+        eProt.selectedIndex = oPreset[iNum-1].prot;
+        eAddr.value         = oPreset[iNum-1].host;
+        ePort.value         = oPreset[iNum-1].port;
+        ePath.value         = oPreset[iNum-1].path;
+        eSendtopic.value    = sPubtopic                            ;
+        eRecvtopic.value    = sSubtopic                            ;
+        WS_warning(oPreset[iNum-1].prot);
       }
       ePreset.selectedIndex = 0;
     }
@@ -345,7 +371,9 @@
   <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a><p>
   <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
   <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
-     <textarea style="width:40em; height:calc(1.3em*15); line-height:1.3;" readonly="readonly">#=== Plain MQTT
+     <textarea style="width:40em; height:calc(1.3em*16); line-height:1.3;" readonly="readonly">allow_anonymous true
+
+#=== Plain MQTT
 listener 1883
 protocol mqtt
 
@@ -358,17 +386,15 @@ listener 8884
 protocol websockets
 certfile /PATH/TO/YOUR/certfile.pem
 keyfile  /PATH/TO/YOUR/keyfile.pem
-cafile   /PATH/TO/YOUR/cafile.pem
-tls_version tlsv1.2</textarea></p>
-  <h3>1) Start MQTT broker by Mosquitto</h3>
-  <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
+cafile   /PATH/TO/YOUR/cafile.pem</textarea></p>
+  <h3>1) Start an MQTT broker</h3>
+  <p>Type the following command on your UNIX terminal.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
   <h3>2) Connect me to the MQTT broker</h3>
-  <p>Fill in the URL form and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
+  <p>In the "HOST" section, fill in the URL form (Specify "ws://localhost:8000/" to use the above MQTT broker, of course, it's OK to use another broker.) and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
   <h3>3) Start subscribing</h3>
-  <p>If you want to send text data from this web page to the UNIX host, type the following command on the host to start subscribing.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC"</textarea><br/>"TOPIC" is the name of the MQTT topic you have to decide on. MQTT topic is like a kind of channel name you want to subscribe to.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, input the topic name into the topic form in the "RECV" section, and push the start button on the same section.</p>
-  <h3>4) Publish a message</h3>
-  <p>If you want to send text data from this web page to the UNIX host, write some message into the form in the "SEND" section, and push the "Publish" button on the same section.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, type the following command on the host to publish a message.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC"</textarea></p>
+  <p>Decide on the topic name in the "RECV" secion and type it into the "topicname" field. Then, push the "Start" button in the same section.</p>
+  <h3>4) Publish a message rewriting command</h3>
+  <p>Publish a message rewriting command on your UNIX terminal with the same topic name and to the same MQTT broker as what you specified in this HTML, like this:<br/><textarea style="width:40em; height:calc(1.3em*2); line-height:1.3;" readonly="readonly">$ echo "write c3 I'll be back soon." | mosquitto_pub -l -h HOSTNAME -t "TOPICNAME"</textarea><br/>Then you can see the message you published on the message board.</p>
+  <p>Or you can also publish the same rewriting command from the publisher in the "SEND" section on this HTML.</p>
 </body>
 </html>

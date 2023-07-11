@@ -2,11 +2,22 @@
 <!--
 ######################################################################
 #
-# mapworm.html: "The Map Worm"
-#   An Example to Try the MQTTwrapper Class (with a Map)
+# MAPWORM.HTML: "The Map Worm" (MQTTwrapper Class Demo)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-21
+# +--- <<Run "mapworm.sh" with this demo!>> --------------------------
+# |
+# | This "mapworm.html" pins at locations of facilities on the map
+# | sent by a MQTT publisher to me. So, we provided you a location
+# | publishing program for "mapworm.html," the file name is
+# | "../../sh_for_example/mapworm.sh."
+# |
+# | So, run the program while the subscriber of this HTML is working.
+# | Then you can see the pins and lines are growing along some train
+# | routes.
+# +-------------------------------------------------------------------
 #
+#
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-12
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -15,145 +26,6 @@
 #
 ######################################################################
 
-
-<<SAMPLE COORDINATE DATA SETS>>
-
-If you do not have any sample coordinate data set, try this one.
-Type the following one-liner commands on your UNIX terminal while
-subscribing to "testtopic/train" via "ws://broker.hivemq.com:8000/mqtt."
-
-$ cat <<TRAIN |
-plot 35.681382 139.766084 東京 (Tokyo)
-plot 35.713768 139.777254 上野 (Ueno)
-plot 35.906295 139.623999 大宮 (Omiya)
-plot 36.139702 139.389942 熊谷 (Kumagaya)
-plot 36.218575 139.179739 本庄早稲田 (Honjo Waseda)
-plot 36.322356 139.013057 高崎 (Takasaki)
-plot 36.362408 138.849589 安中榛名 (Annaka Haruna)
-plot 36.34255 138.635062 軽井沢 (Karuizawa)
-plot 36.277898 138.464339 佐久平 (Sakudaira)
-plot 36.396498 138.249736 上田 (Ueda)
-plot 36.643 138.188686 長野 (Nagano)
-plot 36.847975 138.359663 飯山 (Iiyama)
-plot 37.081813 138.249476 上越妙高 (Joetsu Myoko)
-plot 37.043647 137.861327 糸魚川 (Itoigawa)
-plot 36.8742374 137.4814155 黒部宇奈月温泉 (Kurobe Unazuki Onsen)
-plot 36.701226 137.21319 富山 (Toyama)
-plot 36.727004 137.010459 新高岡 (Shin-Takaoka)
-plot 36.578273 136.647763 金沢 (Kanazawa)
-TRAIN
-while read line; do sleep 1; echo "$line"; done |
-mosquitto_pub -l -t testtopic/train -h broker.example.com
-$
-
-$ cat <<TRAIN |
-plot 35.612858 140.11434 千葉 (Chiba)
-plot 35.622581 140.103279 西千葉 (Nichi-Chiba)
-plot 35.637425 140.092404 稲毛 (Inage)
-plot 35.651828 140.072961 新検見川 (Shin-Kemigawa)
-plot 35.659386 140.057949 幕張 (Makuhari)
-plot 35.672795 140.042241 幕張本郷 (Makuhari Hongo)
-plot 35.691228 140.020476 津田沼 (Tsudanuma)
-plot 35.699813 140.004272 東船橋 (Higashi-Funabashi)
-plot 35.701735 139.985218 船橋 (Funabashi)
-plot 35.707452 139.959097 西船橋 (Nishi-Funabashi)
-plot 35.714276 139.943092 下総中山 (Shimousa Nakayama)
-plot 35.72277744925465 139.92651444626975 本八幡 (Moto Yawata)
-plot 35.729277 139.907809 市川 (Ichikawa)
-plot 35.732962 139.881682 小岩 (Koiwa)
-plot 35.716789 139.85828 新小岩 (Shin-Koiwa)
-plot 35.706434 139.842516 平井 (Hirai)
-plot 35.697587 139.826078 亀戸 (Kameido)
-plot 35.696437 139.813949 錦糸町 (Kinshicho)
-plot 35.69661867521563 139.79736660607162 両国 (Ryogoku)
-plot 35.69745238672908 139.78636969579387 浅草橋 (Asakusabashi)
-plot 35.698683 139.774219 秋葉原 (Akihabara)
-plot 35.699855 139.763786 御茶ノ水 (Ochanomizu)
-plot 35.70203 139.753653 水道橋 (Suidobashi)
-plot 35.702065 139.745015 飯田橋 (Iidabashi)
-plot 35.691210732070374 139.73649022635075 市ケ谷 (Ichigaya)
-plot 35.686014 139.730667 四ツ谷 (Yotsuya)
-plot 35.68009 139.720243 信濃町 (Shinanomachi)
-plot 35.681231 139.711644 千駄ケ谷 (Sendagaya)
-plot 35.683043838270954 139.7020716435509 代々木 (Yoyogi)
-plot 35.68844644213138 139.69860159326348 新宿 (Shinjuku)
-plot 35.700722 139.697358 大久保 (Okubo)
-plot 35.70612169723491 139.68379064463082 東中野 (Higashi-Nakano)
-plot 35.706032 139.665652 中野 (Nakako)
-plot 35.705385 139.649867 高円寺 (Koenji)
-plot 35.704818 139.635868 阿佐ケ谷 (Asagaya)
-plot 35.704632 139.619981 荻窪 (Ogikubo)
-plot 35.703842 139.599361 西荻窪 (Nishi-Ogikubo)
-plot 35.70211210025202 139.58045257022607 吉祥寺 (Kichijoji)
-plot 35.702708 139.560831 三鷹 (Mitaka)
-TRAIN
-while read line; do sleep 1; echo "$line"; done |
-mosquitto_pub -l -t testtopic/train -h broker.example.com
-$
-
-$ cat <<TRAIN |
-plot 35.586859 139.705942 西馬込 (Nishi-Magome)
-plot 35.596435 139.711772 馬込 (Magome)
-plot 35.605479 139.713679 中延 (Nakanobu)
-plot 35.614719 139.716398 戸越 (Togoshi)
-plot 35.626446 139.723444 五反田 (Gotanda)
-plot 35.631679 139.730305 高輪台 (Takanawadai)
-plot 35.638692 139.74002 泉岳寺 (Sengakuji)
-plot 35.64818 139.748775 三田 (Mita)
-plot 35.65689054861274 139.75469940807673 大門 (Daimon)
-plot 35.665498 139.75964 新橋 (Shimbashi)
-plot 35.669464 139.767253 東銀座 (Higashi-Ginza)
-plot 35.675461 139.771767 宝町 (Takaracho)
-plot 35.682413 139.773919 日本橋 (Nihombashi)
-plot 35.686307 139.782285 人形町 (Ningyocho)
-plot 35.692126 139.784821 東日本橋 (Higashi-Nihombashi)
-plot 35.69745238672908 139.78636969579387 浅草橋 (Asakusabashi)
-plot 35.705462557062255 139.7925091045909 蔵前 (Kuramae)
-plot 35.712074 139.79843 浅草 (Asakusa)
-plot 35.70858 139.804624 本所吾妻橋 (Honjo Azumabashi)
-plot 35.710702 139.812935 押上 (Oshiage)
-TRAIN
-while read line; do sleep 1; echo "$line"; done |
-mosquitto_pub -l -t testtopic/train -h broker.example.com
-$
-
-$ cat <<TRAIN |
-plot 35.681382 139.766084 東京 (Tokyo)
-plot 35.675069 139.763328 有楽町 (Yurakucho)
-plot 35.665498 139.75964 新橋 (Shimbashi)
-plot 35.655646 139.756749 浜松町 (Hamamatsucho)
-plot 35.645736 139.747575 田町 (Tamachi)
-plot 35.6355 139.7407 高輪ゲートウェイ (Takanawa Gateway)
-plot 35.630152 139.74044 品川 (Shinagawa)
-plot 35.6197 139.728553 大崎 (Osaki)
-plot 35.626446 139.723444 五反田 (Gotanda)
-plot 35.633998 139.715828 目黒 (Megro)
-plot 35.64669 139.710106 恵比寿 (Ebisu)
-plot 35.658616102225594 139.69937139772813 渋谷 (Shibuya)
-plot 35.670168 139.702687 原宿 (Harajuku)
-plot 35.683043838270954 139.7020716435509 代々木 (Yoyogi)
-plot 35.68844644213138 139.69860159326348 新宿 (Shinjuku)
-plot 35.701306 139.700044 新大久保 (Shin-Okubo)
-plot 35.712285 139.703782 高田馬場 (Takadano Bana)
-plot 35.721204 139.706587 目白 (Mejiro)
-plot 35.728926 139.71038 池袋 (Ikebukuro)
-plot 35.73159 139.729329 大塚 (Otsuka)
-plot 35.733492 139.739345 巣鴨 (Sugamo)
-plot 35.736489 139.746875 駒込 (Komagome)
-plot 35.738062 139.76086 田端 (Tabata)
-plot 35.732135 139.766787 西日暮里 (Nishi-Nippori)
-plot 35.727772 139.770987 日暮里 (Nippori)
-plot 35.720495 139.778837 鶯谷 (Uguisudani)
-plot 35.713768 139.777254 上野 (Ueno)
-plot 35.707963621999376 139.77336630458015 御徒町 (Okachimachi)
-plot 35.698683 139.774219 秋葉原 (Akihabara)
-plot 35.69169 139.770883 神田 (Kanda)
-plot 35.681382 139.766084 東京 (Tokyo)
-TRAIN
-while read line; do sleep 1; echo "$line"; done |
-mosquitto_pub -l -t testtopic/train -h broker.example.com
-$
-
 -->
 <html>
 <head>
@@ -161,7 +33,7 @@ $
   <title>The Map Worm &mdash; MQTTwrapper Class Demo</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <script src="../lib.js/MQTTwrapper.js">{"order":["Paho","MQTT.js"]}</script>
+  <script src="../lib.js/MQTTwrapper.js">{"order":["MQTT.js","Paho"]}</script>
   <!--  for Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
@@ -171,32 +43,33 @@ $
 <body>
   <h1>The Map Worm &mdash; MQTTwrapper Class Demo</h1>
   <p id="which_library">(No library is wrapped...)</p>
+  <p><a href=".">Go back to example list</a></p>
 
-  <h2>HOST (Where is the Broker):</h2>
+  <h2>HOST (Where is the broker):</h2>
   <div>
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot" onchange="WS_warning()"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
+        <select id="prot" onchange="WS_warning()"><option>ws</option><option selected="selected">wss</option></select>://<input type="text" id="addr" value="mqtt0.usp-lab.com" size="20" />:<input type="text" id="port" value="8443" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
       </dd>
       <dd>
-        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset()"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
+        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset(this.selectedIndex)"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
       </dd>
     </dl>
     <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
     <input type="button" id="discconnectionbutton" value="Disconnect" style="width:10em" disabled="disabled" onclick="Disconnect()" />
   </div>
 
-  <h2>SEND (Behave as a Publisher):</h2>
+  <h2>SEND (Behave as a publisher):</h2>
   <div>
-    topic = <input type="text" id="sendtopic" value="test"   size="20" /><br/>
+    topic = <input type="text" id="sendtopic" value="example/mapworm" size="20" /><br/>
     <textarea id="sendbox"  style="width:40em; height:calc(1.3em*3); line-height:1.3;"></textarea><br/>
     <input type="button" id="publishbutton" value="Publish" onclick="Publish()" disabled="disabled" />
   </div>
 
-  <h2>RECV (Behave as a Subscriber):</h2>
+  <h2>RECV (Behave as a subscriber):</h2>
   <div>
-    topic = <input type="text" id="recvtopic" value="test/#" size="20" /><br/>
+    topic = <input type="text" id="recvtopic" value="example/mapworm" size="20" /><br/>
     <textarea id="recvbox"  style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly"></textarea><br/>
     <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
     <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
@@ -204,7 +77,7 @@ $
     <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
   </div>
 
-  <h2>Map (Pick Up from the Subscriber):</h3>
+  <h2>Map (Pick up from the subscriber):</h3>
   <div>
     <div id="map" style="width:640px;height:480px;"></div>
     <dl><dt>control:</dt>
@@ -226,20 +99,13 @@ $
   </p>
   <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">erase all</blockquote>
 
-  <script>
+  <script src="mqttbrokers.js"></script>
+  <script type="text/javascript">
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const oPreset = [ {"label":"Eclipse1"  , "desc":"Eclipse public MQTT broker"                          , "prot":0, "host":"mqtt.eclipseprojects.io" , "port":  80, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Eclipse2"  , "desc":"Eclipse public MQTT broker (TLS)"                    , "prot":1, "host":"mqtt.eclipseprojects.io" , "port": 443, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"EMQX1"     , "desc":"EMQX MQTT Public Broker"                             , "prot":0, "host":"broker.emqx.io"          , "port":8083, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"EMQX2"     , "desc":"EMQX MQTT Public Broker (TLS)"                       , "prot":1, "host":"broker.emqx.io"          , "port":8084, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ1"   , "desc":"HiveMQ Free Public broker"                           , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ2"   , "desc":"HiveMQ Free Public broker (TLS)"                     , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ3"   , "desc":"HiveMQ MQTT Browser Client"                          , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Mosquitto1", "desc":"Eclipse Mosquitto MQTT broker"                       , "prot":0, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Mosquitto2", "desc":"Eclipse Mosquitto MQTT broker (TLS)"                 , "prot":1, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"RichLab."  , "desc":"test broker by RichLab. (TLS, with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/train", "subtopic":"example/train"} ];
+    const sPubtopic = 'mwexample/mapworm';
+    const sSubtopic = 'mwexample/mapworm';
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -282,6 +148,7 @@ $
       eConn.disabled = false;
       eDcon.disabled = false;
     }
+    Preset(1);
     WS_warning();
     
     
@@ -445,17 +312,17 @@ $
       if ( eProt.selectedIndex==1                                                   ) {eWSwarn.style.display='none'  ;return;}
     }
     
-    function Preset() {
+    function Preset(iNum) {
       if ( typeof(oMQTTw)==='undefined'                            ||
           (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
-        if (ePreset.selectedIndex==0) {return;}
-        eProt.selectedIndex = oPreset[ePreset.selectedIndex-1].prot    ;
-        eAddr.value         = oPreset[ePreset.selectedIndex-1].host    ;
-        ePort.value         = oPreset[ePreset.selectedIndex-1].port    ;
-        ePath.value         = oPreset[ePreset.selectedIndex-1].path    ;
-        eSendtopic.value    = oPreset[ePreset.selectedIndex-1].pubtopic;
-        eRecvtopic.value    = oPreset[ePreset.selectedIndex-1].subtopic;
-        WS_warning(oPreset[ePreset.selectedIndex-1].prot);
+        if (iNum==0) {return;}
+        eProt.selectedIndex = oPreset[iNum-1].prot;
+        eAddr.value         = oPreset[iNum-1].host;
+        ePort.value         = oPreset[iNum-1].port;
+        ePath.value         = oPreset[iNum-1].path;
+        eSendtopic.value    = sPubtopic                            ;
+        eRecvtopic.value    = sSubtopic                            ;
+        WS_warning(oPreset[iNum-1].prot);
       }
       ePreset.selectedIndex = 0;
     }
@@ -481,7 +348,9 @@ $
   <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a><p>
   <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
   <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
-     <textarea style="width:40em; height:calc(1.3em*15); line-height:1.3;" readonly="readonly">#=== Plain MQTT
+     <textarea style="width:40em; height:calc(1.3em*16); line-height:1.3;" readonly="readonly">allow_anonymous true
+
+#=== Plain MQTT
 listener 1883
 protocol mqtt
 
@@ -494,17 +363,15 @@ listener 8884
 protocol websockets
 certfile /PATH/TO/YOUR/certfile.pem
 keyfile  /PATH/TO/YOUR/keyfile.pem
-cafile   /PATH/TO/YOUR/cafile.pem
-tls_version tlsv1.2</textarea></p>
-  <h3>1) Start MQTT broker by Mosquitto</h3>
-  <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
+cafile   /PATH/TO/YOUR/cafile.pem</textarea></p>
+  <h3>1) Start an MQTT broker</h3>
+  <p>Type the following command on your UNIX terminal.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
   <h3>2) Connect me to the MQTT broker</h3>
-  <p>Fill in the URL form and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
+  <p>In the "HOST" section, fill in the URL form (Specify "ws://localhost:8000/" to use the above MQTT broker, of course, it's OK to use another broker.) and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
   <h3>3) Start subscribing</h3>
-  <p>If you want to send text data from this web page to the UNIX host, type the following command on the host to start subscribing.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC"</textarea><br/>"TOPIC" is the name of the MQTT topic you have to decide on. MQTT topic is like a kind of channel name you want to subscribe to.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, input the topic name into the topic form in the "RECV" section, and push the start button on the same section.</p>
-  <h3>4) Publish a message</h3>
-  <p>If you want to send text data from this web page to the UNIX host, write some message into the form in the "SEND" section, and push the "Publish" button on the same section.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, type the following command on the host to publish a message.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC"</textarea></p>
+  <p>Decide on the topic name in the "RECV" secion and type it into the "topicname" field. Then, push the "Start" button in the same section.</p>
+  <h3>4) Run "mapworm.sh" to get the sample</h3>
+  <p>Run the "../../sh_for_example/mapworm.sh" on a UNIX terminal. Note that you have to use the same MQTT broker and the same topic name as what you specified in this HTML. (See the "mapworm.sh" usage to do it.)</p>
+  <p>Finally, you can see the "Map worm" growing on the map.</p>
 </body>
 </html>

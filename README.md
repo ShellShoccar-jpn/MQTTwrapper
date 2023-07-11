@@ -4,7 +4,7 @@ A Redundant MQTT JavaScript Library Wrapper with MQTT.js and Paho
 
 ## WHAT IS THIS
 
-This library is to make the MQTT libraries "MQTT.js" and "Paho" more robust. If you use this library instead of them, your program can get longer life than the two libraries because this library works as a wrapper choosing available one of them. If one of them gets unavailable, this wrapper loads the other one.
+This library is to make the MQTT libraries ["MQTT.js"](https://github.com/mqttjs/MQTT.js) and ["Paho"](https://www.eclipse.org/paho/index.php?page=clients/js/index.php) more robust. If you use this library instead of them, your program can get longer life than the two libraries because this library works as a wrapper choosing available one of them. If one of them gets unavailable, this wrapper loads the other one.
 
 ## HOW TO USE
 
@@ -15,6 +15,8 @@ This library is to make the MQTT libraries "MQTT.js" and "Paho" more robust. If 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 <script src="MQTTwrapper.js"></script>
 ```
+
+(The place of the library file "MQTTwrapper.js" is written in the ["CONTENTS OF THIS PACKAGE"](#contents-of-this-package) section.)
 
 **THE <script> TAG OF THIS FILE MUST BE LATER THAN THE MQTT LIBRARY TAGS!!!** Otherwise, this file will fail to wrap them.
 
@@ -60,6 +62,40 @@ if (client) {
 ```
 
 See the reference section for detail.
+
+## CONTENTS OF THIS PACKAGE
+
+This package contains the following files and directories.
+
+```
+.
+|-- README.md .................. This file
+|-- LICENSE .................... License information for this package
+|
+|-- public_html/ ............... Directory you may publish with a web browser
+|   |                            (It ontains the library file and example HTML files.)
+|   |
+|   |-- lib.js/ ................ Directory for library files
+|   |   |
+|   |    -- MQTTwrapper.js ..... The "MQTTwrapper Class Library" file
+|   |
+|    -- examples/ .............. Directory for examples to understand the library
+|       |
+|       |-- helloworld.html .... "Hello, world!" example (Try it first!)
+|       |-- mapworm.html ....... "Map Worm" example (with the Leaflet library)
+|       |-- messageboard.html .. "Japanese Nostalgic Message Board" example (DOM operation)
+|       |-- realtimechart.html . "Realtime Chart" example (with the Chart.js library)
+|       |-- whereareweat.html .. "Where are we at?" example (with GPS API and the Leaflet library)
+|       |
+|        -- mqttbrokers.js ..... Public MQTT broker list; It is loaded by the above examples.
+|
+ -- sh_for_examples/ ........... Directory for shell scripts to help the above examples
+    |
+    |-- dummy_chart.sh ......... Dummy data generator for the "Realtime Chart" examples
+    |
+    |-- mapworm.sh ............. Sample coordinates publisher for the "Map Worm" examples
+     -- mapworm.data/ .......... Directory for sample coordinates files
+```
 
 ## REFERENCE ("MQTTwrapper" Class)
 

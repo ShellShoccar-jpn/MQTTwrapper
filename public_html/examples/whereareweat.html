@@ -2,11 +2,23 @@
 <!--
 ######################################################################
 #
-# whereareweat.html: "Where are we at?"
-#   An Example to Try the MQTTwrapper Class (with a Map and the getLocation)
+# WHEREAREWEAT.HTML: "Where are we at?" (MQTTwrapper Class Demo)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-22
+# +--- <<Share your location with your friends and record them>> -----
+# |
+# | This "whereareweat.html" publishes your current location that your
+# | web browser senses, subscribes to the locations of your friends,
+# | and pins them, of course, yours, too!
+# |
+# | You can see on the map where your friends and yourself are now
+# | with this demo HTML. Moreover, you can record the locations in a
+# | text file by another MQTT subscriber working on a UNIX terminal.
+# |
+# | Try it with your friends!
+# +-------------------------------------------------------------------
 #
+#
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-12
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -31,33 +43,34 @@
 <body>
   <h1>Where Are We At? &mdash; MQTTwrapper Class Demo</h1>
   <p id="which_library">(No library is wrapped...)</p>
+  <p><a href=".">Go back to example list</a></p>
 
-  <h2>HOST (Where is the Broker):</h2>
+  <h2>HOST (Where is the broker):</h2>
   <div>
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot" onchange="WS_warning()"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="8000" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
+        <select id="prot" onchange="WS_warning()"><option>ws</option><option selected="selected">wss</option></select>://<input type="text" id="addr" value="mqtt0.usp-lab.com" size="20" />:<input type="text" id="port" value="8443" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
       </dd>
       <dd>
-        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset()"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
+        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset(this.selectedIndex)"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
       </dd>
     </dl>
     <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
     <input type="button" id="discconnectionbutton" value="Disconnect" style="width:10em" disabled="disabled" onclick="Disconnect()" />
   </div>
 
-  <h2>SEND (Behave as a Publisher):</h2>
+  <h2>SEND (Behave as a publisher):</h2>
   <div>
-    topic = <input type="text" id="sendtopic" value="test" size="20" /><br/>
+    topic = <input type="text" id="sendtopic" value="example/whereareweat" size="20" /><br/>
     myname : <input type="text" id="myname" value="" size="20" /><br/>
     <input type="button" id="publishbutton" value="Publish my location" onclick="Publish(true)" disabled="disabled" />
     <input type="button" id="publishbutton2" value="Erase my location" onclick="Publish(false)" disabled="disabled" />
   </div>
 
-  <h2>RECV (Behave as a Subscriber):</h2>
+  <h2>RECV (Behave as a subscriber):</h2>
   <div>
-    topic = <input type="text" id="recvtopic" value="test/#" size="20" /><br/>
+    topic = <input type="text" id="recvtopic" value="example/whereareweat" size="20" /><br/>
     <textarea id="recvbox"  style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly"></textarea><br/>
     <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
     <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
@@ -65,7 +78,7 @@
     <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
   </div>
 
-  <h2>Map (Pick Up from the Subscriber):</h3>
+  <h2>Map (Pick Up from the subscriber):</h3>
   <div>
     <div id="map" style="width:640px;height:480px;"></div>
     <dl><dt>control:</dt>
@@ -90,20 +103,13 @@
     "<i>name</i>" is the name of your pin. But the word "all" is the special one to erase all pins.
   </p>
 
-  <script>
+  <script src="mqttbrokers.js"></script>
+  <script type="text/javascript">
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const oPreset = [ {"label":"Eclipse1"  , "desc":"Eclipse public MQTT broker"                          , "prot":0, "host":"mqtt.eclipseprojects.io" , "port":  80, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Eclipse2"  , "desc":"Eclipse public MQTT broker (TLS)"                    , "prot":1, "host":"mqtt.eclipseprojects.io" , "port": 443, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"EMQX1"     , "desc":"EMQX MQTT Public Broker"                             , "prot":0, "host":"broker.emqx.io"          , "port":8083, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"EMQX2"     , "desc":"EMQX MQTT Public Broker (TLS)"                       , "prot":1, "host":"broker.emqx.io"          , "port":8084, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ1"   , "desc":"HiveMQ Free Public broker"                           , "prot":0, "host":"broker.hivemq.com"       , "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ2"   , "desc":"HiveMQ Free Public broker (TLS)"                     , "prot":1, "host":"broker.hivemq.com"       , "port":8884, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"HiveMQ3"   , "desc":"HiveMQ MQTT Browser Client"                          , "prot":0, "host":"broker.mqttdashboard.com", "port":8000, "path":"mqtt", "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Mosquitto1", "desc":"Eclipse Mosquitto MQTT broker"                       , "prot":0, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"Mosquitto2", "desc":"Eclipse Mosquitto MQTT broker (TLS)"                 , "prot":1, "host":"test.mosquitto.org"      , "port":8081, "path":""    , "pubtopic":"testtopic"    , "subtopic":"testtopic/#"  },
-                      {"label":"RichLab."  , "desc":"test broker by RichLab. (TLS, with a test publisher)", "prot":1, "host":"testbroker.richlab.org"  , "port":8884, "path":""    , "pubtopic":"example/where", "subtopic":"example/where"} ];
+    const sPubtopic = 'mwexample/whereareweat';
+    const sSubtopic = 'mwexample/whereareweat';
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -147,6 +153,7 @@
       eConn.disabled = false;
       eDcon.disabled = false;
     }
+    Preset(1);
     WS_warning();
     
     
@@ -319,17 +326,17 @@
       if ( eProt.selectedIndex==1                                                   ) {eWSwarn.style.display='none'  ;return;}
     }
     
-    function Preset() {
+    function Preset(iNum) {
       if ( typeof(oMQTTw)==='undefined'                            ||
           (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
-        if (ePreset.selectedIndex==0) {return;}
-        eProt.selectedIndex = oPreset[ePreset.selectedIndex-1].prot    ;
-        eAddr.value         = oPreset[ePreset.selectedIndex-1].host    ;
-        ePort.value         = oPreset[ePreset.selectedIndex-1].port    ;
-        ePath.value         = oPreset[ePreset.selectedIndex-1].path    ;
-        eSendtopic.value    = oPreset[ePreset.selectedIndex-1].pubtopic;
-        eRecvtopic.value    = oPreset[ePreset.selectedIndex-1].subtopic;
-        WS_warning(oPreset[ePreset.selectedIndex-1].prot);
+        if (iNum==0) {return;}
+        eProt.selectedIndex = oPreset[iNum-1].prot;
+        eAddr.value         = oPreset[iNum-1].host;
+        ePort.value         = oPreset[iNum-1].port;
+        ePath.value         = oPreset[iNum-1].path;
+        eSendtopic.value    = sPubtopic                            ;
+        eRecvtopic.value    = sSubtopic                            ;
+        WS_warning(oPreset[iNum-1].prot);
       }
       ePreset.selectedIndex = 0;
     }
@@ -354,7 +361,9 @@
   <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a><p>
   <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
   <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
-     <textarea style="width:40em; height:calc(1.3em*15); line-height:1.3;" readonly="readonly">#=== Plain MQTT
+     <textarea style="width:40em; height:calc(1.3em*16); line-height:1.3;" readonly="readonly">allow_anonymous true
+
+#=== Plain MQTT
 listener 1883
 protocol mqtt
 
@@ -367,17 +376,15 @@ listener 8884
 protocol websockets
 certfile /PATH/TO/YOUR/certfile.pem
 keyfile  /PATH/TO/YOUR/keyfile.pem
-cafile   /PATH/TO/YOUR/cafile.pem
-tls_version tlsv1.2</textarea></p>
-  <h3>1) Start MQTT broker by Mosquitto</h3>
-  <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
+cafile   /PATH/TO/YOUR/cafile.pem</textarea></p>
+  <h3>1) Start an MQTT broker</h3>
+  <p>Type the following command on your UNIX terminal.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
   <h3>2) Connect me to the MQTT broker</h3>
-  <p>Fill in the URL form and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
+  <p>In the "HOST" section, fill in the URL form (Specify "ws://localhost:8000/" to use the above MQTT broker, of course, it's OK to use another broker.) and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
   <h3>3) Start subscribing</h3>
-  <p>If you want to send text data from this web page to the UNIX host, type the following command on the host to start subscribing.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC"</textarea><br/>"TOPIC" is the name of the MQTT topic you have to decide on. MQTT topic is like a kind of channel name you want to subscribe to.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, input the topic name into the topic form in the "RECV" section, and push the start button on the same section.</p>
-  <h3>4) Publish a message</h3>
-  <p>If you want to send text data from this web page to the UNIX host, write some message into the form in the "SEND" section, and push the "Publish" button on the same section.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, type the following command on the host to publish a message.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC"</textarea></p>
+  <p>Decide on the topic name in the "RECV" secion and type it into the "topicname" field. Then, push the "Start" button in the same section.</p>
+  <h3>4) Publish your location</h3>
+  <p>Write the same topic name as the one in the "RECV" section. Next, decide on the name of your pin and type it into the "myname" field. Finally, push the "Publish my location" button in the same section. Then you can see your pin on the map.</p>
+  <p>Or you can also publish the same plotting command from the publisher in the "SEND" section on this HTML. See the "Map" section for the command usage.</p>
 </body>
 </html>

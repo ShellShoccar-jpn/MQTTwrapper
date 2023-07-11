@@ -3,7 +3,8 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-24
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) / USP-NCNT prj.
+//         on 2023-05-19
 //
 // ===================================================================
 //

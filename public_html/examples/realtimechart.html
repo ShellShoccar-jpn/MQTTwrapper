@@ -2,11 +2,24 @@
 <!--
 ######################################################################
 #
-# MQTTwrapper_example1.html:
-#   An Example to Try the MQTTwrapper Class (with a Chart)
+# REALTIMECHART.HTML: Draw a Realtime Chart (MQTTwrapper Class Demo)
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-04-12
+# +--- <<Add your data via MQTT while running "dummy_chart.sh">> -----
+# |
+# | This "realtimechart.html" becomes an MQTT subscriber and receives
+# | commands to get and plot data.
+# |
+# | For a better view of the demo, first, run the program
+# | "../../sh_for_example/dummy_chart.sh" to send dummy data via MQTT
+# | to this HTML. The data are small amplitude and slowly generated.
+# | And you can see them being drawn in the chart one after another.
+# |
+# | Next, you publish a plot command from your UNIX terminal. Then, you
+# | can see the plots you sent will be inserted into the chart.
+# +-------------------------------------------------------------------
 #
+#
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-12
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -18,15 +31,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>MQTTwrapper Class Demo (with a Chart)</title>
-  <script type="text/javascript" src="MQTTwrapper.js"></script>
-  <script type="text/javascript">
-    let sLibname  = load_mqttwrapper({'MQTTjs':'https://unpkg.com/mqtt/dist/mqtt.min.js'                               ,
-                                      'Paho'  :'https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js'});
-    const oPreset = { 'HiveMQ1': {'prot':0, 'host':'broker.hivemq.com'       , 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
-                      'HiveMQ2': {'prot':1, 'host':'broker.hivemq.com'       , 'port':8884, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'},
-                      'HiveMQ3': {'prot':0, 'host':'broker.mqttdashboard.com', 'port':8000, 'path':'mqtt', 'pubtopic':'testtopic', 'subtopic':'testtopic/#'} };
-  </script>
+  <title>Realtime Chart (MQTTwrapper Class Demo)</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <script src="../lib.js/MQTTwrapper.js">{"order":["Paho","MQTT.js"]}</script>
   <!-- for chartjs-plugin-streaming -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.3.2"></script>
   <script src="https://cdn.jsdelivr.net/npm/luxon@1.27.0"></script>
@@ -36,42 +44,43 @@
 </head>
 
 <body>
-  <h1>MQTTwrapper Class Demo (with a Chart)</h1>
+  <h1>Realtime Chart (MQTTwrapper Class Demo)</h1>
   <p id="which_library">(No library is wrapped...)</p>
+  <p><a href=".">Go back to example list</a></p>
 
-  <h2>HOST (Where is the Broker):</h2>
+  <h2>HOST (Where is the broker):</h2>
   <div>
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot"><option selected="selected">ws</option><option>wss</option></select>://<input type="text" id="addr" value="localhost" size="20" />:<input type="text" id="port" value="11883" size="5" />/<input type="text" id="path" value="" size="20" /><br/>
-        <label style="font-size:smaller"><input type="button" value="preset1" onclick="Preset('HiveMQ1')" /> for the HiveMQ Public broker</label><br/>
-        <label style="font-size:smaller"><input type="button" value="preset2" onclick="Preset('HiveMQ2')" /> for the HiveMQ Public broker (TLS)</label><br/>
-        <label style="font-size:smaller"><input type="button" value="preset3" onclick="Preset('HiveMQ3')" /> for the HiveMQ <a href="http://www.hivemq.com/demos/websocket-client/">MQTT Browser Client</a></label>
+        <select id="prot" onchange="WS_warning()"><option>ws</option><option selected="selected">wss</option></select>://<input type="text" id="addr" value="mqtt0.usp-lab.com" size="20" />:<input type="text" id="port" value="8443" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
+      </dd>
+      <dd>
+        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset(this.selectedIndex)"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
       </dd>
     </dl>
     <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
     <input type="button" id="discconnectionbutton" value="Disconnect" style="width:10em" disabled="disabled" onclick="Disconnect()" />
   </div>
 
-  <h2>SEND (Behave as a Publisher):</h2>
+  <h2>SEND (Behave as a publisher):</h2>
   <div>
-    topic = <input type="text" id="sendtopic" value="test"   size="20" /><br/>
-    <textarea id="sendbox"  style="width:40em; height:5em;"></textarea><br/>
+    topic = <input type="text" id="sendtopic" value="chart" size="20" /><br/>
+    <textarea id="sendbox"  style="width:40em; height:calc(1.3em*3); line-height:1.3;"></textarea><br/>
     <input type="button" id="publishbutton" value="Publish" onclick="Publish()" disabled="disabled" />
   </div>
 
-  <h2>RECV (Behave as a Subscriber):</h2>
+  <h2>RECV (Behave as a subscriber):</h2>
   <div>
-    topic = <input type="text" id="recvtopic" value="test/#" size="20" /><br/>
-    <textarea id="recvbox"  style="width:40em; height:5em;" readonly="readonly"></textarea><br/>
+    topic = <input type="text" id="recvtopic" value="chart" size="20" /><br/>
+    <textarea id="recvbox"  style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly"></textarea><br/>
     <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
     <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
     <input type="button" id="recvstop"  value="Stop"   style="width:7em" onclick="StopSub()"  disabled="disabled" />
     <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
   </div>
 
-  <h2>Chart (Pick Up from the Subscriber):</h3>
+  <h2>Chart (Pick up from the subscriber):</h3>
   <div style="width:640px;">
     <canvas id="DobleLineChart"></canvas>
   </div>
@@ -84,12 +93,33 @@
     <dt><i>n</i>2</dt><dd>for Dataset B (real-number, -10&lt;<i>n</i>2&lt;10)</dd>
   </dl>
 
+  <script src="mqttbrokers.js"></script>
   <script type="text/javascript">
+    //////////////////////////////////////////////////////////////////
+    // Initialize for this webpage
+    //////////////////////////////////////////////////////////////////
+    const sPubtopic = 'mwexample/chart';
+    const sSubtopic = 'mwexample/chart';
+    (function(){
+      let eSel,eOpt,i;
+      eSel = document.getElementById('preset_selector');
+      if (! eSel                     ) {return;}
+      if (typeof oPreset !== 'object') {return;}
+      for (i=0; i<oPreset.length; i++) {
+        eOpt = document.createElement('option');
+        eOpt.value     = oPreset[i].label                                ;
+        eOpt.innerHTML = oPreset[i].label + ' &mdash; ' + oPreset[i].desc;
+        eSel.appendChild(eOpt);
+      }
+    })();
+
     //////////////////////////////////////////////////////////////////
     // Initialize for MQTTwrapper
     //////////////////////////////////////////////////////////////////
     let oMQTTw;
     
+    let eWSwarn        = document.getElementById('ws_warning'          );
+    let ePreset        = document.getElementById('preset_selector'     );
     let eConn          = document.getElementById('connectionbutton'    );
     let eDcon          = document.getElementById('discconnectionbutton');
     let ePub           = document.getElementById('publishbutton'       );
@@ -106,12 +136,14 @@
     let eRecvstop      = document.getElementById('recvstop'            );
     let eRecvclear     = document.getElementById('recvclear'           );
     
-    if (sLibname !== '') {
+    if (MQTTwrapper.sLibname !== '') {
       let e=document.getElementById('which_library');
-      if (e) {e.innerHTML='(Wrapped library this time is "'+sLibname+'")';}
+      if (e) {e.innerHTML='(Wrapped library this time is "'+MQTTwrapper.sLibname+'")';}
       eConn.disabled = false;
       eDcon.disabled = false;
     }
+    Preset(1);
+    WS_warning();
     
     
     //////////////////////////////////////////////////////////////////
@@ -172,7 +204,7 @@
         //     2: E.nnn              (UNIX epoch time with 3 decimal points)
         //     3: value #1 (A, real-number, -10<A<10)
         //     4: value #2 (B, real-number, -10<B<10)
-        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +-?\d+(\.\d+)? +-?\d+(\.\d+)?$/)) {return;}
+        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[2]*1});
         oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[3]*1});
@@ -183,7 +215,7 @@
         //     1: "plot" keyword
         //     2: value #1 (A, real-number, -10<A<10)
         //     3: value #2 (B, real-number, -10<B<10)
-        if (! sInData.match(/^plot +-?\d+(\.\d+)? +-?\d+(\.\d+)?$/)) {return;}
+        if (! sInData.match(/^plot +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
         lsInData = sInData.split(/\s+/);
         oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[1]*1});
         oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[2]*1});
@@ -202,26 +234,31 @@
       oMQTTw = new MQTTwrapper(eProt.value + '://' + eAddr.value + ':' + ePort.value + '/' + ePath.value);
       if (! oMQTTw) { alert('MQTTwrapper does not work correctly'); return; };
       
-      eConn.value    = 'CONNECTING...';
-      eConn.disabled = true;
+      eConn.value      = 'CONNECTING...';
+      eConn.disabled   = true;
+      ePreset.disabled = true;
       
-      oMQTTw.connect(
+      oMQTTw.connect({
         //--- callback for connected ---------------------------------
-        () => { eProt.item(1-eProt.selectedIndex).disabled = true;
-                eAddr.readOnly                             = true;
-                ePort.readOnly                             = true;
-                ePath.readOnly                             = true;
-                eConn.value                                = 'NOW CONNECTED';
-                eConn.disabled                             = true;
-                ePub.disabled                              = false;
-                eRecvstart.disabled                        = false;
-                eRecvstop.disabled                         =  true;          },
+        "cbConnected"    : () => { eProt.item(1-eProt.selectedIndex).disabled = true;
+                                   eAddr.readOnly                             = true;
+                                   ePort.readOnly                             = true;
+                                   ePath.readOnly                             = true;
+                                   eConn.value                                = 'NOW CONNECTED';
+                                   eConn.disabled                             = true;
+                                   ePreset.disabled                           = true;
+                                   ePub.disabled                              = false;
+                                   eRecvstart.disabled                        = false;
+                                   eRecvstop.disabled                         =  true;          },
         //--- callback for disconnected ------------------------------
-        Disconnect,
+        "cbDisconnected" : Disconnect,
+        "cbKilled"       : Disconnect,
         //--- callback for connecting error --------------------------
-        () => { eConn.value                                = 'Connect';
-                eConn.disabled                             = false;          }
-      );
+        "cbFailed"       : (s)=> { alert(s)                                              ;
+                                   eConn.value                                = 'Connect';
+                                   ePreset.disabled                           = false;
+                                   eConn.disabled                             = false;          }
+      });
     }
     
     function Disconnect() {
@@ -235,6 +272,7 @@
       eRecvtopic.readOnly                        = false;
       eConn.value                                = 'Connect';
       eConn.disabled                             = false;
+      ePreset.disabled                           = false;
       ePub.disabled                              = true;
       eRecvstart.disabled                        = true;
       eRecvstop.disabled                         = true;
@@ -281,16 +319,26 @@
       eRecvbox.value = '';
     }
     
-    function Preset(sProf) {
+    function WS_warning() {
+      if ((eProt.selectedIndex==0)                                                &&
+          (location.protocol==='https:')                                          &&
+          (! eAddr.value.match(/(^|[A-Z0-9])(localhost|127\.\d+\.\d+\.\d+|::1)$/))  ) {eWSwarn.style.display='inline';return;}
+      if ( eProt.selectedIndex==1                                                   ) {eWSwarn.style.display='none'  ;return;}
+    }
+    
+    function Preset(iNum) {
       if ( typeof(oMQTTw)==='undefined'                            ||
           (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
-        eProt.selectedIndex = oPreset[sProf].prot ;
-        eAddr.value         = oPreset[sProf].host ;
-        ePort.value         = oPreset[sProf].port ;
-        ePath.value         = oPreset[sProf].path ;
-        eSendtopic.value    = oPreset[sProf].pubtopic;
-        eRecvtopic.value    = oPreset[sProf].subtopic;
+        if (iNum==0) {return;}
+        eProt.selectedIndex = oPreset[iNum-1].prot;
+        eAddr.value         = oPreset[iNum-1].host;
+        ePort.value         = oPreset[iNum-1].port;
+        ePath.value         = oPreset[iNum-1].path;
+        eSendtopic.value    = sPubtopic                            ;
+        eRecvtopic.value    = sSubtopic                            ;
+        WS_warning(oPreset[iNum-1].prot);
       }
+      ePreset.selectedIndex = 0;
     }
   </script>
 
@@ -305,18 +353,30 @@
   <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a><p>
   <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
   <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
-     <textarea style="width:15em; height:3em;" readonly="readonly">listener 1883
-listener 11883
-protocol websockets</textarea></p>
-  <h3>1) Start MQTT broker by Mosquitto</h3>
-  <p>Type the following command on your UNIX host.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
+     <textarea style="width:40em; height:calc(1.3em*16); line-height:1.3;" readonly="readonly">allow_anonymous true
+
+#=== Plain MQTT
+listener 1883
+protocol mqtt
+
+#=== Plain MQTT over WebSocket
+listener 8000
+protocol websockets
+
+#=== Secure MQTT over WebSocket (TLS)
+listener 8884
+protocol websockets
+certfile /PATH/TO/YOUR/certfile.pem
+keyfile  /PATH/TO/YOUR/keyfile.pem
+cafile   /PATH/TO/YOUR/cafile.pem</textarea></p>
+  <h3>1) Start an MQTT broker</h3>
+  <p>Type the following command on your UNIX terminal.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
   <h3>2) Connect me to the MQTT broker</h3>
-  <p>Fill in the URL form and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
+  <p>In the "HOST" section, fill in the URL form (Specify "ws://localhost:8000/" to use the above MQTT broker, of course, it's OK to use another broker.) and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
   <h3>3) Start subscribing</h3>
-  <p>If you want to send text data from this web page to the UNIX host, type the following command on the host to start subscribing.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC_NAME"</textarea><br/>"TOPIC_NAME" is the name of the MQTT topic you have to decide on. MQTT topic is like a kind of channel name you want to subscribe to.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, input the topic name into the topic form in the "RECV" section, and push the start button on the same section.</p>
-  <h3>4) Publish a message</h3>
-  <p>If you want to send text data from this web page to the UNIX host, write some message into the form in the "SEND" section, and push the "Publish" button on the same section.</p>
-  <p>Or, if you want to send text data from the UNIX host to this web page, type the following command on the host to publish a message.<br/><textarea style="width:40em; height:1em;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC_NAME"</textarea></p>
+  <p>Decide on the topic name in the "RECV" secion and type it into the "topicname" field. Then, push the "Start" button in the same section.</p>
+  <h3>4) Publish a data plotting command</h3>
+  <p>Publish a data plotting command on your UNIX terminal like this:<br/><textarea style="width:40em; height:calc(1.3em*1); line-height:1.3;" readonly="readonly">$ echo "plot 3.14 -2.718" | mosquitto_pub -l -h HOSTNAME -t "TOPICNAME"</textarea><br/>("TOPIC" is the topic name you already decided on. And you have to specify the same MQTT broker instead of "localhost" if you are connecting to a different broker from what you specified on this HTML control panel.) Then you can see new blue and pink plots on the chart, which are drawn by the command you published.</p>
+  <p>Or you can also publish the same plotting command from the publisher in the "SEND" section on this HTML.</p>
 </body>
 </html>
