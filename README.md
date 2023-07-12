@@ -6,7 +6,13 @@ A Redundant MQTT JavaScript Library Wrapper with MQTT.js and Paho
 
 This library is to make the MQTT libraries ["MQTT.js"](https://github.com/mqttjs/MQTT.js) and ["Paho"](https://www.eclipse.org/paho/index.php?page=clients/js/index.php) more robust. If you use this library instead of them, your program can get longer life than the two libraries because this library works as a wrapper choosing available one of them. If one of them gets unavailable, this wrapper loads the other one.
 
-## HOW TO USE
+## FIRST, TRY THE "Hello, world!" EXAMPLE
+
+The best way to understand what the library is and how easy to use is to try the "Hello, world!" example first! Just after you have done "git clone" me, open the "./public_html/examples/helloworld.html" Then try each step written in the "How to Use Me" section on the HTML document.
+
+## HOW TO USE THIS LIBRARY
+
+Now that you know this library, we will tell you how to use this library in your web programs.
 
 1. Load the MQTT libraries you want to wrap and this file on your HTML file using the <script> tags, like this:
 
