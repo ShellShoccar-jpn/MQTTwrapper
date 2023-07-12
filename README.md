@@ -79,7 +79,11 @@ This package contains the following files and directories.
 |-- LICENSE .................... License information for this package
 |
 |-- public_html/ ............... Directory you may publish with a web browser
-|   |                            (It ontains the library file and example HTML files.)
+|   |                            - It contains the library file and example HTML files.
+|   |                            - If you want to put this package on a web server,
+|   |                              we recommend you publish only this directory.
+|   |                            - Of course, unnecessary to care about it if you
+|   |                              put this package within your local computer.
 |   |
 |   |-- lib.js/ ................ Directory for library files
 |   |   |
