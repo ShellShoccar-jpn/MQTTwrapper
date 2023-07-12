@@ -81,7 +81,8 @@ This package contains the following files and directories.
 |-- public_html/ ............... Directory you may publish with a web browser
 |   |                            - It contains the library file and example HTML files.
 |   |                            - If you want to put this package on a web server,
-|   |                              we recommend you publish only this directory.
+|   |                              we recommend you publish only the files in this
+|   |                              directory.
 |   |                            - Of course, unnecessary to care about it if you
 |   |                              put this package within your local computer.
 |   |
