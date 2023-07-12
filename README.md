@@ -8,7 +8,7 @@ This library is to make the MQTT libraries ["MQTT.js"](https://github.com/mqttjs
 
 ## FIRST, TRY THE "Hello, world!" EXAMPLE
 
-The best way to understand what the library is and how easy to use is to try the "Hello, world!" example first! Just after you have done "git clone" me, open the "./public_html/examples/helloworld.html" Then try each step written in the "How to Use Me" section on the HTML document.
+The best way to understand what the library is and how easy to use is to try the "Hello, world!" example first! Just after you have done "git clone" me, open the "./public_html/examples/helloworld.html" with a web browser. Then try each step written in the "How to Use Me" section on the HTML document.
 
 ## HOW TO USE THIS LIBRARY
 
