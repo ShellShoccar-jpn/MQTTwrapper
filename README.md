@@ -95,9 +95,9 @@ This package contains the following files and directories.
 |       |-- index.html ......... Just a Link HTML file for the following examples
 |       |
 |       |-- helloworld.html .... "Hello, world!" example (Try it first!)
-|       |-- mapworm.html ....... "Map Worm" example (using the Leaflet library)
 |       |-- messageboard.html .. "Japanese Nostalgic Message Board" example (DOM operation)
 |       |-- realtimechart.html . "Realtime Chart" example (using the Chart.js library)
+|       |-- mapworm.html ....... "Map Worm" example (using the Leaflet library)
 |       |-- whereareweat.html .. "Where are we at?" example (using Geo API and the Leaflet library)
 |       |
 |        -- mqttbrokers.js ..... Public MQTT broker list; It is loaded by the above examples.
