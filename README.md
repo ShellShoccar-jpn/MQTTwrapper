@@ -74,7 +74,7 @@ See the reference section for detail.
 This package contains the following files and directories.
 
 ```
-.
+./
 |-- README.md .................. This file
 |-- LICENSE .................... License information for this package
 |
