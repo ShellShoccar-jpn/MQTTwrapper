@@ -88,9 +88,9 @@ This package contains the following files and directories.
 |   |
 |   |-- lib.js/ ................ Directory for library files
 |   |   |
-|   |    -- MQTTwrapper.js ..... The "MQTTwrapper Class Library" file
+|   |   `-- MQTTwrapper.js ..... The "MQTTwrapper Class Library" file
 |   |
-|    -- examples/ .............. Directory for examples to understand the library
+|   `-- examples/ .............. Directory for examples to understand the library
 |       |
 |       |-- index.html ......... Just a Link HTML file for the following examples
 |       |
@@ -100,14 +100,14 @@ This package contains the following files and directories.
 |       |-- mapworm.html ....... "Map Worm" example (using the Leaflet library)
 |       |-- whereareweat.html .. "Where are we at?" example (using Geo API and the Leaflet library)
 |       |
-|        -- mqttbrokers.js ..... Public MQTT broker list; It is loaded by the above examples.
+|       `-- mqttbrokers.js ..... Public MQTT broker list; It is loaded by the above examples.
 |
- -- sh_for_examples/ ........... Directory for shell scripts to help the above examples
+`-- sh_for_examples/ ........... Directory for shell scripts to help the above examples
     |
     |-- dummy_chart.sh ......... Dummy data generator for the "Realtime Chart" examples
     |
     |-- mapworm.sh ............. Sample coordinates publisher for the "Map Worm" examples
-     -- mapworm.data/ .......... Directory for sample coordinates files
+    `-- mapworm.data/ .......... Directory for sample coordinates files
 ```
 
 ## REFERENCE ("MQTTwrapper" Class)
