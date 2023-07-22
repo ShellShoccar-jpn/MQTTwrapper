@@ -24,7 +24,7 @@
 #   However, you can change them with the "-h" and "-t" options.
 #
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-10
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-22
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -57,7 +57,7 @@ print_usage_and_exit () {
 	                          dummy data to the MQTT broker.
 	                          Default is "hwexample/chart."
 	USAGE
-	Version : 2023-07-10 02:45:11 JST
+	Version : 2023-07-22 17:59:02 JST
   exit 1
 }
 error_exit() {
@@ -83,12 +83,12 @@ mqtttopic='hwexample/chart'
 while [ $# -gt 0 ]; do
   case "${1:-}" in
     -h) [ $# -eq 0 ] && print_usage_and_exit
-        mqttbroker=$1
-        shift
+        mqttbroker=$2
+        shift; shift
         ;;
     -t) [ $# -eq 0 ] && print_usage_and_exit
-        mqtttopic=$1
-        shift
+        mqtttopic=$2
+        shift; shift
         ;;
   esac
 done
@@ -110,4 +110,4 @@ while :; do                                                            #
   read line && echo "$line"                                            #
   sleep 2                                                              #
 done                                                                   |
-mosquitto_pub -l -t example/chart -h localhost
+mosquitto_pub -l -t "$mqtttopic" -h "$mqttbroker"
