@@ -32,7 +32,7 @@
 #   However, you can change them with the "-h" and "-t" options.
 #
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-22
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-23
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -65,7 +65,7 @@ print_usage_and_exit () {
 	                          dummy data to the MQTT broker.
 	                          Default is "hwexample/chart."
 	USAGE
-	Version : 2023-07-22 20:11:29 JST
+	Version : 2023-07-23 01:09:56 JST
   exit 1
 }
 error_exit() {
@@ -85,7 +85,7 @@ fi
 
 # === Initialize parameters ==========================================
 mqttbroker='localhost'
-mqtttopic='hwexample/chart'
+mqtttopic='hwexample/mapworm'
 
 # === Read options ===================================================
 while [ $# -gt 0 ]; do
@@ -117,12 +117,12 @@ while :; do
   while IFS= read -r file; do
     cat "$file"
     cat <<-TRAILER
-		echo wait
-		echo wait
-		echo wait
-		echo wait
-		echo wait
-		echo erase all
+		wait
+		wait
+		wait
+		wait
+		wait
+		erase all
 		TRAILER
   done
 done                                     |
