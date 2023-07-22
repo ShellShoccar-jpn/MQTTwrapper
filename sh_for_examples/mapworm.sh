@@ -65,7 +65,7 @@ print_usage_and_exit () {
 	                          dummy data to the MQTT broker.
 	                          Default is "hwexample/chart."
 	USAGE
-	Version : 2023-07-22 17:59:12 JST
+	Version : 2023-07-22 20:11:29 JST
   exit 1
 }
 error_exit() {
@@ -90,11 +90,11 @@ mqtttopic='hwexample/chart'
 # === Read options ===================================================
 while [ $# -gt 0 ]; do
   case "${1:-}" in
-    -h) [ $# -eq 0 ] && print_usage_and_exit
+    -h) [ $# -ge 2 ] || print_usage_and_exit
         mqttbroker=$2
         shift; shift
         ;;
-    -t) [ $# -eq 0 ] && print_usage_and_exit
+    -t) [ $# -ge 2 ] || print_usage_and_exit
         mqtttopic=$2
         shift; shift
         ;;
