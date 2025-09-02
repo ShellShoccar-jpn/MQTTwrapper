@@ -3,7 +3,7 @@
 // MQTTwrapper.js - A Redundant MQTT JavaScript Library Wrapper
 //                  with MQTT.js and Paho
 //
-// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-12
+// Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2025-09-03
 //
 // ===================================================================
 //
@@ -302,7 +302,7 @@ var MQTTwrapper = null;
   for (i=0; i<l.length; i++) {
     if (typeof l[i] !== 'string') {continue;}
     if (l[i] === 'MQTT.js') {
-      if (typeof mqtt !== 'function') {continue;}
+      if ((typeof mqtt !== 'function')&&(typeof mqtt !== 'object')) {continue;}
       MQTTwrapper = Set_MQTTjs_wrapper_class();
       console.log('MQTTwrapper: MQTT.js is wrapped');
       return true;
