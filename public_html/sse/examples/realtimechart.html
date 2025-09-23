@@ -1,0 +1,453 @@
+<!doctype html>
+<!--
+######################################################################
+#
+# REALTIMECHART.HTML:
+#     Draw a Realtime Chart (MQTT via HTTP/2 Demo)
+#
+# +--- <<Add your data via MQTT while running "dummy_chart.sh">> -----
+# |
+# | This "realtimechart.html" becomes an MQTT subscriber and receives
+# | commands to get and plot data.
+# |
+# | For a better view of the demo, first, run the program
+# | "../../sh_for_example/dummy_chart.sh" to send dummy data via MQTT
+# | to this HTML. The data are small amplitude and slowly generated.
+# | And you can see them being drawn in the chart one after another.
+# |
+# | Next, you publish a plot command from your UNIX terminal. Then, you
+# | can see the plots you sent will be inserted into the chart.
+# +-------------------------------------------------------------------
+#
+#
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2025-09-24
+#
+# This is a public-domain software (CC0). It means that all of the
+# people can use this for any purposes with no restrictions at all.
+# By the way, We are fed up with the side effects which are brought
+# about by the major licenses.
+#
+######################################################################
+-->
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Realtime Chart (MQTT via HTTP/2 Demo)</title>
+  <!-- for chartjs-plugin-streaming -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.3.2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@1.27.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@2.0.0"></script>
+    <!--
+    LICENSES OF THE JAVASCRIPT LIBRARIES
+      Chart.js:
+        Copyright © 2014-2022 Chart.js Contributors
+        Released under the MIT license https://opensource.org/licenses/mit-license.php
+      Luxon:
+        Copyright © 2017-2021, Moment.js contributors, and is attributed to Isaac Cambron and contributors.
+        Released under the MIT license https://opensource.org/licenses/mit-license.php
+      chartjs-plugin-streaming:
+        Copyright © 2017-2021 Akihiko Kusanagi
+        Released under the MIT license https://opensource.org/licenses/mit-license.php
+    -->
+  <!-- /for chartjs-plugin-streaming -->
+</head>
+
+<body>
+  <h1>Realtime Chart (MQTT via HTTP/2 Demo)</h1>
+  <p><a href="index.html">Go back to example list</a> / <a href="https://github.com/ShellShoccar-jpn/MQTTwrapper/">Go to the repository of this example on GitHub</a></p>
+
+  <h2>HOST (Where is the broker):</h2>
+  <div>
+    <dl>
+      <dt>URL:</dt>
+      <dd>
+        <select id="prot"><option>mqtt</option><option>mqtts</option></select>://<input type="text" id="addr" value="" size="20" />:<input type="text" id="port" value="" size="5" />/
+      </dd>
+      <dd>
+        ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset(this.selectedIndex)"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
+      </dd>
+    </dl>
+  </div>
+
+  <h2>SEND (Behave as a publisher):</h2>
+  <div>
+    topic = <input type="text" id="sendtopic" value="" size="20" /><br/>
+    <textarea id="sendbox"  style="width:40em; height:calc(1.3em*3); line-height:1.3;"></textarea><br/>
+    <input type="button" id="publishbutton" value="Publish" onclick="Publish()" />
+  </div>
+
+  <h2>RECV (Behave as a subscriber):</h2>
+  <div>
+    topic = <input type="text" id="recvtopic" value="" size="20" /><br/>
+    <textarea id="recvbox"  style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly"></textarea><br/>
+    <input type="button" id="recvstart" value="Start"  style="width:11em" onclick="StartSub()" />
+    <input type="button" id="recvstop"  value="Stop"   style="width:11em" onclick="StopSub()"  />
+    <input type="button" id="recvclear" value="Clear"  style="width: 7em" onclick="ClearSub()" />
+  </div>
+
+  <h2>Chart (Pick up from the subscriber):</h3>
+  <div style="width:640px;">
+    <canvas id="DobleLineChart"></canvas>
+  </div>
+  <p>
+    Data will be plotted on the chart when the above subscriber receives it if the data is formatted like the following.
+  </p>
+  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">plot <i>n</i>1 <i>n</i>2</blockquote>
+  <dl>
+    <dt><i>n</i>1</dt><dd>for Dataset A (real-number, -10&lt;<i>n</i>1&lt;10)</dd>
+    <dt><i>n</i>2</dt><dd>for Dataset B (real-number, -10&lt;<i>n</i>2&lt;10)</dd>
+  </dl>
+
+  <script src="mqttbrokers.js"></script>
+  <script type="text/javascript">
+    //////////////////////////////////////////////////////////////////
+    // Initialize for this webpage
+    //////////////////////////////////////////////////////////////////
+    const sPubtopic = 'mwexample/chart';
+    const sSubtopic = 'mwexample/chart';
+    let oSse;
+    (function(){
+      let eSel,eOpt,i;
+      eSel = document.getElementById('preset_selector');
+      if (! eSel                     ) {return;}
+      if (typeof oPreset !== 'object') {return;}
+      for (i=0; i<oPreset.length; i++) {
+        eOpt = document.createElement('option');
+        eOpt.value     = oPreset[i].label                                ;
+        eOpt.innerHTML = oPreset[i].label + ' &mdash; ' + oPreset[i].desc;
+        eSel.appendChild(eOpt);
+      }
+    })();
+
+    //////////////////////////////////////////////////////////////////
+    // Initialize
+    //////////////////////////////////////////////////////////////////
+    let ePreset        = document.getElementById('preset_selector'     );
+    let ePub           = document.getElementById('publishbutton'       );
+    let eProt          = document.getElementById('prot'                );
+    let eAddr          = document.getElementById('addr'                );
+    let ePort          = document.getElementById('port'                );
+    let eSendbox       = document.getElementById('sendbox'             );
+    let eSendtopic     = document.getElementById('sendtopic'           );
+    let eRecvbox       = document.getElementById('recvbox'             );
+    let eRecvtopic     = document.getElementById('recvtopic'           );
+    let eRecvstart     = document.getElementById('recvstart'           );
+    let eRecvstop      = document.getElementById('recvstop'            );
+    let eRecvclear     = document.getElementById('recvclear'           );
+    
+    Preset(1);
+    
+    
+    //////////////////////////////////////////////////////////////////
+    // Initialize for Chart.js
+    //////////////////////////////////////////////////////////////////
+    
+    let config = {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'Dataset A',
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            borderColor: 'rgb(255, 99, 132)',
+            borderDash: [8, 4],
+            fill: true,
+            data: []
+          },
+          {
+            label: 'Dataset B',
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgb(54, 162, 235)',
+            cubicInterpolationMode: 'monotone',
+            fill: true,
+            data: []
+          }
+        ]
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'realtime',
+            realtime: {
+              delay: 2000,
+            }
+          }
+        }
+      }
+    };
+    const oChart = new Chart(document.getElementById('DobleLineChart'),config);
+    
+    // Parse and inject the incoming data into the chart
+    // the data format assumed the following:
+    //   * space-separated-data
+    //   * three columns
+    //     1: "plot" keyword
+    //     2: value #1 (A, -10<A<10)
+    //     3: value #2 (B, -10<B<10)
+    function parsinjector(sInData) {
+      // Parse
+      let iFieldType = 2;
+      let lsInData;
+      if (typeof sInData !== 'string') {return;}
+      
+      if (iFieldType === 1) {
+        //   * four-column-type (not used now)
+        //     1: YYYYMMDDhhmmss.nnn (Calendar time with 3 decimal points)
+        //     2: E.nnn              (UNIX epoch time with 3 decimal points)
+        //     3: value #1 (A, real-number, -10<A<10)
+        //     4: value #2 (B, real-number, -10<B<10)
+        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
+        lsInData = sInData.split(/\s+/);
+        oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[2]*1});
+        oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[3]*1});
+      }
+      if (iFieldType === 2) {
+        //   * three-column-type
+        //   * three columns
+        //     1: "plot" keyword
+        //     2: value #1 (A, real-number, -10<A<10)
+        //     3: value #2 (B, real-number, -10<B<10)
+        if (! sInData.match(/^plot +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
+        lsInData = sInData.split(/\s+/);
+        oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[1]*1});
+        oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[2]*1});
+      }
+      
+      // Update the chart
+      oChart.update('quiet');
+    }
+    
+    
+    //////////////////////////////////////////////////////////////////
+    // Button Attached Functions
+    //////////////////////////////////////////////////////////////////
+    
+    async function Publish() {
+      let msg = eSendbox.value;
+      if (msg === '') {
+        alert('An empty message is not allowed!');
+        return false;
+      }
+
+      ePub.disabled       = true;
+      eSendtopic.readOnly = true;
+
+      const oCgivars = new URLSearchParams();
+      oCgivars.append('host' , eAddr.value);
+      oCgivars.append('port' , ePort.value);
+      oCgivars.append('topic', eSendtopic.value);
+      oCgivars.append('text' , msg);
+
+      try {
+        const oRes = await fetch('../cgi/mqtt_via_http_up.cgi', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: oCgivars.toString()
+        });
+        //
+        if (!oRes.ok) {
+          let sErr = await oRes.text();
+          sErr = JSON.stringify(sErr);
+          throw new Error(`{"code":${oRes.status},"message":${sErr}}`);
+        }
+        //
+        const sRes = await oRes.text();
+        let o;
+        try {
+          o = JSON.parse(sRes);
+        } catch {
+          throw new Error('{"code":500,"message":"Bad response-data"}');
+        }
+
+        if (typeof o.status !== 'number') {
+          throw new Error('{"code":500,"message":"no status in"}');
+        }
+        if (o.status > 0) {
+          throw new Error(`{"code":500,"message":"(${o.status}) ${o.text || ''}"}`);
+        }
+        //
+        ePub.disabled       = false;
+        eSendtopic.readOnly = false;
+        return true;
+      } catch (oErr) {
+        let o;
+        try {
+          o = JSON.parse(oErr.message);
+        } catch {
+          o = {code: 400, message: 'unexpected error'};
+        }
+        alert(`Error happened; (${o.code})\n${o.message}`);
+        ePub.disabled       = false;
+        eSendtopic.readOnly = false;
+        return false;
+      }
+    }
+    
+    function Receiver(sMessage) {
+      eRecvbox.value     += ((eRecvbox.value!='')?'\n':'') + sMessage;
+      eRecvbox.scrollTop  = eRecvbox.scrollHeight;
+      parsinjector(sMessage+'');
+    }
+    
+    function StartSub() {
+      oSse = new EventSource(
+        '../cgi/mqtt_via_http_down.cgi'                  +
+        "?host="  + encodeURIComponent(eAddr.value)      +
+        "&port="  + encodeURIComponent(ePort.value)      +
+        "&topic=" + encodeURIComponent(eRecvtopic.value)
+      );
+      //
+      eProt.item(1-eProt.selectedIndex).disabled = true;
+      eAddr.readOnly                             = true;
+      ePort.readOnly                             = true;
+      ePreset.disabled                           = true;
+      eRecvtopic.readOnly                        = true;
+      eRecvstart.disabled                        = true;
+      eRecvstart.value                           = 'Connecting...';
+      //
+      oSse.onopen = (o) => {
+        eRecvstart.value    = 'NOW SUBSCRIBING';
+      }
+      //
+      oSse.onmessage = (oRet) => {
+        let o,s;
+        try       {o = JSON.parse(oRet.data);                                }
+        catch (e) {console.error('Invalid data field was received.'); return;}
+        if (!('status' in o) || (typeof o.status !== 'number')) {
+          console.error('Invalid data format in data field.');
+          return;
+        }
+        if ('text' in o) {
+          s = o.text;
+        } else           {
+          console.error('data field does not have "text" property.');
+          s = '';
+        }
+        if (o.status !== 0) {
+          console.error(
+            'Server returned non-zero status: ('
+              + o.status
+              + ')'
+              + ('text' in o) ? o.text : ''
+          );
+          StopSub();
+          return;
+        }
+        Receiver(s);
+      }
+      //
+      oSse.onerror = (oRet) => {
+        if (oSse.readyState === EventSource.CONNECTING) {
+          console.log('Retry to connect...');
+          eRecvstart.value = 'Reconnecting...';
+          return;
+        }
+        if (oSse.readyState === EventSource.OPEN      ) {
+          console.log('Connecting...');
+          return;
+        }
+        if (oSse.readyState === EventSource.CLOSED    ) {
+          console.log('Disconnected');
+          StopSub();
+          return;
+        }
+        console.errpr('Unknown "readyState." Stop subscribe.');
+        StopSub();
+        return;
+      }
+    }
+    
+    function StopSub() {
+      if (typeof oSse !== 'object') {return;}
+      oSse.close();
+      oSse = undefined;
+      eProt.item(1-eProt.selectedIndex).disabled = false;
+      eAddr.readOnly                             = false;
+      ePort.readOnly                             = false;
+      ePreset.disabled                           = false;
+      eRecvtopic.readOnly                        = false;
+      eRecvstart.disabled                        = false;
+      eRecvstart.value                           = 'Start';
+    }
+    
+    function ClearSub() {
+      eRecvbox.value = '';
+    }
+    
+    function Preset(iNum) {
+      if ( typeof(oMQTTw)==='undefined'                            ||
+          (typeof(oMQTTw)==='object'   &&oMQTTw.bConnected===false)  ) {
+        if (iNum==0) {return;}
+        eProt.selectedIndex = oPreset[iNum-1].prot;
+        eAddr.value         = oPreset[iNum-1].host;
+        ePort.value         = oPreset[iNum-1].port;
+        eSendtopic.value    = sPubtopic                            ;
+        eRecvtopic.value    = sSubtopic                            ;
+      }
+      ePreset.selectedIndex = 0;
+    }
+  </script>
+
+
+  <h2>README (What is this?):</h3>
+  <p>This is a control panel for testing the EventSource class, which is for the "Server-Sent Event (SSE)." This class is helpful for your web browser to work as an MQTT subscriber, as it enables server-push data transmission within HTTP regulations. And HTTP/2 is necessary to make the class truly practical. HTTP/2 can make HTTP data transmission both upstream and downstream more efficiently with a single connection.</strong></p>
+  <p>This control panel runs the mosquitto_pub/mosquitto_sub command in a CGI script on the web server by using the EventSource class and the fetch() method. The <a href="https://mosquitto.org/">Mosquitto</a> commands encapsulate/decapsulate MQTT data, instead of the web client, so that this page can work as not only an MQTT subscriber but also an MQTT publisher.</p>
+  <p>Try to use me by the following steps.</p>
+  
+  <h2>How to Use Me:</h2>
+  <h3>0-1) [PREP.] Install a HTTP/2 web server</h3>
+  <p>Typically, I recommend <a href="https://httpd.apache.org/">Apache</a> or <a href="https://nginx.org/">nginx</a>.<p>
+  <ul>
+    <li>Requirements for Apache:
+      <ul>
+        <li>Apache 2.4.17 or later</li>
+        <li>Built with <a href="https://www.openssl.org/">OpenSSL</a> 1.0.2 or later</li>
+        <li>Built with --enable-ssl, --enable-http2, and --with-mpm=event</li>
+        <li>LoadModule mod_ssl, mod_http2, and mod_mpm_event in httpd.conf</li>
+        <li>Add "SSLEngine on" and "Protocol h2 http/1.1" in your &lt;VirtualHost&gt; directive</li>
+      </ul>
+    </li>
+    <li>Requirements for nginx:
+      <ul>
+        <li>nginx 1.9.5 or later</li>
+        <li>Built with OpenSSL 1.0.2 or later</li>
+        <li>Built with --with-http_ssl_module and --with-http_v2_module</li>
+        <li>Add "listen 443 ssl http2" in the server block for your host</li>
+      </ul>
+    </li>
+  </ul>
+  <h3>0-2) [PREP.] Install Mosquitto</h3>
+  <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a>Then, Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
+     <textarea style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly">allow_anonymous true
+
+#=== Plain MQTT
+listener 1883
+protocol mqtt</textarea></p>
+  <h3>0-3) [PREP.] Git clone this repository into a public web space on your web server</h3>
+  <p><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ https://github.com/ShellShoccar-jpn/MQTTwrapper.git</textarea></p>
+  <h3>1) Start an MQTT broker</h3>
+  <p>Type the following command on your UNIX terminal.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
+  <h3>2) Select the MQTT broker</h3>
+  <p>In the "HOST" section, fill in the URL form (Specify "mqtt://localhost:1883/" to use the above MQTT broker, of course, it's OK to use another broker. If you do so, replace "localhost" in the latter explanations with the other host you specified.)</p>
+  <h3>3) Start subscribing</h3>
+  <p>Move to the "RECV" section. And decide on the MQTT topic name for this trial. Next, type the topic name into the "topicname" field in this section and push the "Start" button in the same section.</p>
+  <h3>4) Publish a data plotting command</h3>
+  <p>Publish a data plotting command on your UNIX terminal like this:<br/><textarea style="width:40em; height:calc(1.3em*1); line-height:1.3;" readonly="readonly">$ echo "plot 3.14 -2.718" | mosquitto_pub -l -h HOSTNAME -t "TOPICNAME"</textarea><br/>("TOPIC" is the topic name you already decided on. And you have to specify the same MQTT broker instead of "localhost" if you are connecting to a different broker from what you specified on this HTML control panel.) Then you can see new blue and pink plots on the chart, which are drawn by the command you published.</p>
+  <p>Or you can also publish the same plotting command from the publisher in the "SEND" section on this HTML.</p>
+</body>
+</html>
+<!--
+LICENSES OF THE JAVASCRIPT LIBRARIES
+  This file:
+    CC0 or Unlicense
+  Chart.js:
+    Copyright © 2014-2022 Chart.js Contributors
+    Released under the MIT license https://opensource.org/licenses/mit-license.php
+  Luxon:
+    Copyright © 2017-2021, Moment.js contributors, and is attributed to Isaac Cambron and contributors.
+    Released under the MIT license https://opensource.org/licenses/mit-license.php
+  chartjs-plugin-streaming:
+    Copyright © 2017-2021 Akihiko Kusanagi
+    Released under the MIT license https://opensource.org/licenses/mit-license.php
+-->

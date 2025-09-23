@@ -2,22 +2,24 @@
 <!--
 ######################################################################
 #
-# HELLOWORLD.HTML:
-#     Education Material to Start MQTT over WebSocket Programming
+# REALTIMECHART.HTML: Draw a Realtime Chart (MQTTwrapper Class Demo)
 #
-# +--- <<Send the "Hello, world!" via MQTT over WebSocket>> ----------
+# +--- <<Add your data via MQTT while running "dummy_chart.sh">> -----
 # |
-# | This "helloworld.html" is a simple HTML program for you to first
-# | experience the MQTT over WebSocket.
+# | This "realtimechart.html" becomes an MQTT subscriber and receives
+# | commands to get and plot data.
 # |
-# | You can see the tutorial on the bottom of the page when you open
-# | this file with a web browser.
+# | For a better view of the demo, first, run the program
+# | "../../sh_for_example/dummy_chart.sh" to send dummy data via MQTT
+# | to this HTML. The data are small amplitude and slowly generated.
+# | And you can see them being drawn in the chart one after another.
 # |
-# | Let's try!
+# | Next, you publish a plot command from your UNIX terminal. Then, you
+# | can see the plots you sent will be inserted into the chart.
 # +-------------------------------------------------------------------
 #
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-23
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2025-09-24
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -29,14 +31,32 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Hello, world! (MQTTwrapper Class Demo)</title>
+  <title>Realtime Chart (MQTTwrapper Class Demo)</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <script src="../lib.js/MQTTwrapper.js">{"order":["Paho","MQTT.js"]}</script>
+  <!-- for chartjs-plugin-streaming -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.3.2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@1.27.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@2.0.0"></script>
+    <!--
+    LICENSES OF THE JAVASCRIPT LIBRARIES
+      Chart.js:
+        Copyright © 2014-2022 Chart.js Contributors
+        Released under the MIT license https://opensource.org/licenses/mit-license.php
+      Luxon:
+        Copyright © 2017-2021, Moment.js contributors, and is attributed to Isaac Cambron and contributors.
+        Released under the MIT license https://opensource.org/licenses/mit-license.php
+      chartjs-plugin-streaming:
+        Copyright © 2017-2021 Akihiko Kusanagi
+        Released under the MIT license https://opensource.org/licenses/mit-license.php
+    -->
+  <!-- /for chartjs-plugin-streaming -->
 </head>
 
 <body>
-  <h1>Hello, world! (MQTTwrapper Class Demo)</h1>
+  <h1>Realtime Chart (MQTTwrapper Class Demo)</h1>
   <p id="which_library">(No library is wrapped...)</p>
   <p><a href="index.html">Go back to example list</a> / <a href="https://github.com/ShellShoccar-jpn/MQTTwrapper/">Go to the repository of this example on GitHub</a></p>
 
@@ -72,13 +92,26 @@
     <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
   </div>
 
+  <h2>Chart (Pick up from the subscriber):</h3>
+  <div style="width:640px;">
+    <canvas id="DobleLineChart"></canvas>
+  </div>
+  <p>
+    Data will be plotted on the chart when the above subscriber receives it if the data is formatted like the following.
+  </p>
+  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">plot <i>n</i>1 <i>n</i>2</blockquote>
+  <dl>
+    <dt><i>n</i>1</dt><dd>for Dataset A (real-number, -10&lt;<i>n</i>1&lt;10)</dd>
+    <dt><i>n</i>2</dt><dd>for Dataset B (real-number, -10&lt;<i>n</i>2&lt;10)</dd>
+  </dl>
+
   <script src="mqttbrokers.js"></script>
   <script type="text/javascript">
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const sPubtopic = 'mwexample/helloworld';
-    const sSubtopic = 'mwexample/helloworld';
+    const sPubtopic = 'mwexample/chart';
+    const sSubtopic = 'mwexample/chart';
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -126,6 +159,86 @@
     
     
     //////////////////////////////////////////////////////////////////
+    // Initialize for Chart.js
+    //////////////////////////////////////////////////////////////////
+    
+    let config = {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'Dataset A',
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            borderColor: 'rgb(255, 99, 132)',
+            borderDash: [8, 4],
+            fill: true,
+            data: []
+          },
+          {
+            label: 'Dataset B',
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgb(54, 162, 235)',
+            cubicInterpolationMode: 'monotone',
+            fill: true,
+            data: []
+          }
+        ]
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'realtime',
+            realtime: {
+              delay: 2000,
+            }
+          }
+        }
+      }
+    };
+    const oChart = new Chart(document.getElementById('DobleLineChart'),config);
+    
+    // Parse and inject the incoming data into the chart
+    // the data format assumed the following:
+    //   * space-separated-data
+    //   * three columns
+    //     1: "plot" keyword
+    //     2: value #1 (A, -10<A<10)
+    //     3: value #2 (B, -10<B<10)
+    function parsinjector(sInData) {
+      // Parse
+      let iFieldType = 2;
+      let lsInData;
+      if (typeof sInData !== 'string') {return;}
+      
+      if (iFieldType === 1) {
+        //   * four-column-type (not used now)
+        //     1: YYYYMMDDhhmmss.nnn (Calendar time with 3 decimal points)
+        //     2: E.nnn              (UNIX epoch time with 3 decimal points)
+        //     3: value #1 (A, real-number, -10<A<10)
+        //     4: value #2 (B, real-number, -10<B<10)
+        if (! sInData.match(/^\d{1,14}(\.\d+)? +\d+(\.\d+)? +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
+        lsInData = sInData.split(/\s+/);
+        oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[2]*1});
+        oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[3]*1});
+      }
+      if (iFieldType === 2) {
+        //   * three-column-type
+        //   * three columns
+        //     1: "plot" keyword
+        //     2: value #1 (A, real-number, -10<A<10)
+        //     3: value #2 (B, real-number, -10<B<10)
+        if (! sInData.match(/^plot +[+-]?\d+(\.\d+)? +[+-]?\d+(\.\d+)?$/)) {return;}
+        lsInData = sInData.split(/\s+/);
+        oChart.data.datasets[0].data.push({x:Date.now(),y:lsInData[1]*1});
+        oChart.data.datasets[1].data.push({x:Date.now(),y:lsInData[2]*1});
+      }
+      
+      // Update the chart
+      oChart.update('quiet');
+    }
+
+    
+    //////////////////////////////////////////////////////////////////
     // Button Attached Functions
     //////////////////////////////////////////////////////////////////
     
@@ -163,7 +276,6 @@
     function Disconnect() {
       if (! oMQTTw           ) {return             ;}
       if (  oMQTTw.bConnected) {oMQTTw.disconnect();}
-      oMQTTw.disconnect();
       eProt.item(1-eProt.selectedIndex).disabled = false;
       eAddr.readOnly                             = false;
       ePort.readOnly                             = false;
@@ -188,6 +300,7 @@
                         + ((eRecvtopicname.checked)?sTopic+' : ':'')
                         + sMessage;
       eRecvbox.scrollTop = eRecvbox.scrollHeight;
+      parsinjector(sMessage+'');
     }
     
     function StartSub() {
@@ -272,13 +385,10 @@ cafile   /PATH/TO/YOUR/cafile.pem</textarea></p>
   <h3>2) Connect me to the MQTT broker</h3>
   <p>In the "HOST" section, fill in the URL form (Specify "ws://localhost:8000/" to use the above MQTT broker, of course, it's OK to use another broker.) and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
   <h3>3) Start subscribing</h3>
-  <p>First, decide on the MQTT topic name for this trial. Next, type the topic name into the "topicname" field in the "RECV" section and push the "Start" button in the same section. And also, type the following command on your UNIX terminal.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC"</textarea><br/>"TOPIC" is the topic name you already decided on. And you have to specify the same MQTT broker instead of "localhost" if you are connecting to a different broker from what you specified on this HTML control panel.</p>
-  <h3>4) Publish a message</h3>
-  <p>Let's try to send messages between the web browser and thr UNIX terminal each other, by the following ways.</p>
-  <dl>
-    <dt>UNIX to Web</dt><dd>Type the following command on your UNIX terminal.<br/><textarea style="width:36em; height:1.3em; line-height:1.3;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC"</textarea><br/>("TOPIC" is the topic name you already decided on. And you have to specify the same MQTT broker instead of "localhost" if you are connecting to a different broker from what you specified on this HTML control panel.) You must be able to see the "Hello, world!" message in the "RECV" section.</dd>
-    <dt>Web to UNIX</dt><dd>Write the topic name you already decided on into the "topicname" field in the "SEND" section. And also, write the "Hello, world!" message into the message field under the "topicname." Then, push the "Publish" button. So, you must be able to see the same message on your UNIX terminal!</dd>
-  </dl>
+  <p>Decide on the topic name in the "RECV" secion and type it into the "topicname" field. Then, push the "Start" button in the same section.</p>
+  <h3>4) Publish a data plotting command</h3>
+  <p>Publish a data plotting command on your UNIX terminal like this:<br/><textarea style="width:40em; height:calc(1.3em*1); line-height:1.3;" readonly="readonly">$ echo "plot 3.14 -2.718" | mosquitto_pub -l -h HOSTNAME -t "TOPICNAME"</textarea><br/>("TOPIC" is the topic name you already decided on. And you have to specify the same MQTT broker instead of "localhost" if you are connecting to a different broker from what you specified on this HTML control panel.) Then you can see new blue and pink plots on the chart, which are drawn by the command you published.</p>
+  <p>Or you can also publish the same plotting command from the publisher in the "SEND" section on this HTML.</p>
 </body>
 </html>
 <!--
@@ -291,4 +401,13 @@ LICENSES OF THE JAVASCRIPT LIBRARIES
     Released under the Eclipse Public License http://www.eclipse.org/legal/epl-v10.html
   MQTTwrappter:
     CC0 or Unlicense
+  Chart.js:
+    Copyright © 2014-2022 Chart.js Contributors
+    Released under the MIT license https://opensource.org/licenses/mit-license.php
+  Luxon:
+    Copyright © 2017-2021, Moment.js contributors, and is attributed to Isaac Cambron and contributors.
+    Released under the MIT license https://opensource.org/licenses/mit-license.php
+  chartjs-plugin-streaming:
+    Copyright © 2017-2021 Akihiko Kusanagi
+    Released under the MIT license https://opensource.org/licenses/mit-license.php
 -->

@@ -2,7 +2,7 @@
 <!--
 ######################################################################
 #
-# WHEREAREWEAT.HTML: "Where are we at?" (MQTTwrapper Class Demo)
+# WHEREAREWEAT.HTML: "Where are we at?" (MQTT via HTTP/2 Demo)
 #
 # +--- <<Share your location with your friends and record them>> -----
 # |
@@ -18,7 +18,7 @@
 # +-------------------------------------------------------------------
 #
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-23
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2025-09-24
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -30,10 +30,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Where Are We At? &mdash; MQTTwrapper Class Demo</title>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <script src="../lib.js/MQTTwrapper.js">{"order":["Paho","MQTT.js"]}</script>
+  <title>The Map Worm (MQTT via HTTP/2 Demo)</title>
   <!--  for Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -41,8 +38,7 @@
 </head>
 
 <body>
-  <h1>Where Are We At? &mdash; MQTTwrapper Class Demo</h1>
-  <p id="which_library">(No library is wrapped...)</p>
+  <h1>The Map Worm (MQTT via HTTP/2 Demo)</h1>
   <p><a href="index.html">Go back to example list</a> / <a href="https://github.com/ShellShoccar-jpn/MQTTwrapper/">Go to the repository of this example on GitHub</a></p>
 
   <h2>HOST (Where is the broker):</h2>
@@ -50,35 +46,32 @@
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot" onchange="WS_warning()"><option>ws</option><option selected="selected">wss</option></select>://<input type="text" id="addr" value="mqtt0.usp-lab.com" size="20" />:<input type="text" id="port" value="8443" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
+        <select id="prot"><option>mqtt</option><option>mqtts</option></select>://<input type="text" id="addr" value="" size="20" />:<input type="text" id="port" value="" size="5" />/
       </dd>
       <dd>
         ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset(this.selectedIndex)"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
       </dd>
     </dl>
-    <input type="button" id="connectionbutton"     value="Connect"    style="width:10em" disabled="disabled" onclick="Connect()"    />
-    <input type="button" id="discconnectionbutton" value="Disconnect" style="width:10em" disabled="disabled" onclick="Disconnect()" />
   </div>
 
   <h2>SEND (Behave as a publisher):</h2>
   <div>
     topic = <input type="text" id="sendtopic" value="example/whereareweat" size="20" /><br/>
     myname : <input type="text" id="myname" value="" size="20" /><br/>
-    <input type="button" id="publishbutton" value="Publish my location" onclick="Publish(true)" disabled="disabled" />
-    <input type="button" id="publishbutton2" value="Erase my location" onclick="Publish(false)" disabled="disabled" />
+    <input type="button" id="publishbutton"  value="Publish my location" onclick="Publish(true)"  />
+    <input type="button" id="publishbutton2" value="Erase my location"   onclick="Publish(false)" />
   </div>
 
   <h2>RECV (Behave as a subscriber):</h2>
   <div>
-    topic = <input type="text" id="recvtopic" value="example/whereareweat" size="20" /><br/>
+    topic = <input type="text" id="recvtopic" value="" size="20" /><br/>
     <textarea id="recvbox"  style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly"></textarea><br/>
-    <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
-    <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
-    <input type="button" id="recvstop"  value="Stop"   style="width:7em" onclick="StopSub()"  disabled="disabled" />
-    <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
+    <input type="button" id="recvstart" value="Start"  style="width:11em" onclick="StartSub()" />
+    <input type="button" id="recvstop"  value="Stop"   style="width:11em" onclick="StopSub()"  />
+    <input type="button" id="recvclear" value="Clear"  style="width: 7em" onclick="ClearSub()" />
   </div>
 
-  <h2>Map (Pick Up from the subscriber):</h3>
+  <h2>Map (Pick up from the subscriber):</h3>
   <div>
     <div id="map" style="width:640px;height:480px;"></div>
     <dl><dt>control:</dt>
@@ -108,8 +101,9 @@
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const sPubtopic = 'mwexample/whereareweat';
-    const sSubtopic = 'mwexample/whereareweat';
+    const sPubtopic = 'mwexample/mapworm';
+    const sSubtopic = 'mwexample/mapworm';
+    let oSse;
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -124,37 +118,23 @@
     })();
 
     //////////////////////////////////////////////////////////////////
-    // Initialize for MQTTwrapper
+    // Initialize
     //////////////////////////////////////////////////////////////////
-    let oMQTTw;
-    
-    let eWSwarn        = document.getElementById('ws_warning'          );
     let ePreset        = document.getElementById('preset_selector'     );
-    let eConn          = document.getElementById('connectionbutton'    );
-    let eDcon          = document.getElementById('discconnectionbutton');
     let ePub           = document.getElementById('publishbutton'       );
     let ePub2          = document.getElementById('publishbutton2'      );
     let eProt          = document.getElementById('prot'                );
     let eAddr          = document.getElementById('addr'                );
     let ePort          = document.getElementById('port'                );
-    let ePath          = document.getElementById('path'                );
     let eMyname        = document.getElementById('myname'              );
     let eSendtopic     = document.getElementById('sendtopic'           );
     let eRecvbox       = document.getElementById('recvbox'             );
     let eRecvtopic     = document.getElementById('recvtopic'           );
-    let eRecvtopicname = document.getElementById('recvtopicname'       );
     let eRecvstart     = document.getElementById('recvstart'           );
     let eRecvstop      = document.getElementById('recvstop'            );
     let eRecvclear     = document.getElementById('recvclear'           );
     
-    if (MQTTwrapper.sLibname !== '') {
-      let e=document.getElementById('which_library');
-      if (e) {e.innerHTML='(Wrapped library this time is "'+MQTTwrapper.sLibname+'")';}
-      eConn.disabled = false;
-      eDcon.disabled = false;
-    }
     Preset(1);
-    WS_warning();
     
     
     //////////////////////////////////////////////////////////////////
@@ -163,6 +143,7 @@
     
     let eTracer = document.getElementById('tracer');
     let oPins = new Array();
+    let oLine;
     let oFgrp = L.featureGroup();
     let oMap = L.map('map').setView([35.6889101,139.748428], 11);
     if (true) {
@@ -196,7 +177,6 @@
         nLng = s.replace(/ .*$/,'') *1;
         sNam = s.replace(/^[^ ]+ */,'');
         
-        
         // Plot
         if (sNam in oPins) {oPins[sNam].remove();oFgrp.removeLayer(oPins[sNam]);delete oPins[sNam];}
         oPins[sNam] = L.marker([nLat, nLng]).addTo(oMap);
@@ -217,113 +197,182 @@
     // Button Attached Functions
     //////////////////////////////////////////////////////////////////
     
-    function Connect() {
-      oMQTTw = new MQTTwrapper(eProt.value + '://' + eAddr.value + ':' + ePort.value + '/' + ePath.value);
-      if (! oMQTTw) { alert('MQTTwrapper does not work correctly'); return; };
-      
-      eConn.value      = 'CONNECTING...';
-      eConn.disabled   = true;
-      ePreset.disabled = true;
-      
-      oMQTTw.connect({
-        //--- callback for connected ---------------------------------
-        "cbConnected"    : () => { eProt.item(1-eProt.selectedIndex).disabled = true;
-                                   eAddr.readOnly                             = true;
-                                   ePort.readOnly                             = true;
-                                   ePath.readOnly                             = true;
-                                   eConn.value                                = 'NOW CONNECTED';
-                                   eConn.disabled                             = true;
-                                   ePreset.disabled                           = true;
-                                   ePub.disabled                              = false;
-                                   ePub2.disabled                             = false;
-                                   eRecvstart.disabled                        = false;
-                                   eRecvstop.disabled                         =  true;          },
-        //--- callback for disconnected ------------------------------
-        "cbDisconnected" : Disconnect,
-        "cbKilled"       : Disconnect,
-        //--- callback for connecting error --------------------------
-        "cbFailed"       : (s)=> { alert(s)                                              ;
-                                   eConn.value                                = 'Connect';
-                                   ePreset.disabled                           = false;
-                                   eConn.disabled                             = false;          }
-      });
-    }
-    
-    function Disconnect() {
-      if (! oMQTTw           ) {return             ;}
-      if (  oMQTTw.bConnected) {oMQTTw.disconnect();}
-      eProt.item(1-eProt.selectedIndex).disabled = false;
-      eAddr.readOnly                             = false;
-      ePort.readOnly                             = false;
-      ePath.readOnly                             = false;
-      eRecvtopic.readOnly                        = false;
-      eConn.value                                = 'Connect';
-      eConn.disabled                             = false;
-      ePreset.disabled                           = false;
-      ePub.disabled                              = true;
-      ePub2.disabled                             = true;
-      eRecvstart.disabled                        = true;
-      eRecvstop.disabled                         = true;
-    }
-    
     async function Publish(b) {
+      let msg;
       let sName = eMyname.value;
       if (sName.match(/^ *$/)) {alert('Mr. Nobody, may I have your real name?'             ); return false;}
       if (sName === 'all'    ) {alert('Sorry, the name "all" is reserved. Set another one.'); return false;}
 
-      if (! b) {return oMQTTw.publish(eSendtopic.value,'erase '+eMyname.value);}
+      if (b) {
+        const oLoc = await new Promise(
+                       (resolve, reject)=>{
+                         navigator.geolocation.getCurrentPosition(resolve, reject);
+                       }
+                     ).catch(
+                       (error) => {
+                         switch (error.code) {
+                           case error.PERMISSION_DENIED:
+                             if (location.protocol === 'http:') {
+                               alert('Your web browser refused to give your location to this program.\nMost web browsers always refuse it on non-HTTPS web page.');
+                             } else {
+                               alert('Your web browser refused to give your location to this program.\nAllow your web browser to give the location.');
+                             }
+                             break;
+                           default:
+                             alert('Error happend while getting your location.');
+                             break;
+                         }
+                       }
+                     );
+        if (! oLoc) {return false;}
+        msg='plot '+oLoc.coords.latitude+' '+oLoc.coords.longitude+' '+eMyname.value;
+      } else   {
+        msg='erase '+eMyname.value;
+      }
 
-      const oLoc = await new Promise(
-                     (resolve)=>{
-                       navigator.geolocation.getCurrentPosition((oLoc)=>{resolve(oLoc);})
-                     }
-                   );
-      return oMQTTw.publish(
-        eSendtopic.value,
-        'plot '+oLoc.coords.latitude+' '+oLoc.coords.longitude+' '+eMyname.value
-      );
+      ePub.disabled       = true;
+      eSendtopic.readOnly = true;
+
+      const oCgivars = new URLSearchParams();
+      oCgivars.append('host' , eAddr.value);
+      oCgivars.append('port' , ePort.value);
+      oCgivars.append('topic', eSendtopic.value);
+      oCgivars.append('text' , msg);
+
+      try {
+        const oRes = await fetch('../cgi/mqtt_via_http_up.cgi', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: oCgivars.toString()
+        });
+        //
+        if (!oRes.ok) {
+          let sErr = await oRes.text();
+          sErr = JSON.stringify(sErr);
+          throw new Error(`{"code":${oRes.status},"message":${sErr}}`);
+        }
+        //
+        const sRes = await oRes.text();
+        let o;
+        try {
+          o = JSON.parse(sRes);
+        } catch {
+          throw new Error('{"code":500,"message":"Bad response-data"}');
+        }
+
+        if (typeof o.status !== 'number') {
+          throw new Error('{"code":500,"message":"no status in"}');
+        }
+        if (o.status > 0) {
+          throw new Error(`{"code":500,"message":"(${o.status}) ${o.text || ''}"}`);
+        }
+        //
+        ePub.disabled       = false;
+        eSendtopic.readOnly = false;
+        return true;
+      } catch (oErr) {
+        let o;
+        try {
+          o = JSON.parse(oErr.message);
+        } catch {
+          o = {code: 400, message: 'unexpected error'};
+        }
+        alert(`Error happened; (${o.code})\n${o.message}`);
+        ePub.disabled       = false;
+        eSendtopic.readOnly = false;
+        return false;
+      }
     }
     
-    function Receiver(sMessage, sTopic) {
-      eRecvbox.value += ((eRecvbox.value!='')?'\n':'') 
-                        + ((eRecvtopicname.checked)?sTopic+' : ':'')
-                        + sMessage;
-      eRecvbox.scrollTop = eRecvbox.scrollHeight;
+    function Receiver(sMessage) {
+      eRecvbox.value     += ((eRecvbox.value!='')?'\n':'') + sMessage;
+      eRecvbox.scrollTop  = eRecvbox.scrollHeight;
       parsinjector(sMessage+'');
     }
     
     function StartSub() {
-      let topic = eRecvtopic.value;
-      if (topic === '') {
-        eSendbox.value = 'NOT Subscribe due to no topic';
-        return false;
+      oSse = new EventSource(
+        '../cgi/mqtt_via_http_down.cgi'                  +
+        "?host="  + encodeURIComponent(eAddr.value)      +
+        "&port="  + encodeURIComponent(ePort.value)      +
+        "&topic=" + encodeURIComponent(eRecvtopic.value)
+      );
+      //
+      eProt.item(1-eProt.selectedIndex).disabled = true;
+      eAddr.readOnly                             = true;
+      ePort.readOnly                             = true;
+      ePreset.disabled                           = true;
+      eRecvtopic.readOnly                        = true;
+      eRecvstart.disabled                        = true;
+      eRecvstart.value                           = 'Connecting...';
+      //
+      oSse.onopen = (o) => {
+        eRecvstart.value    = 'NOW SUBSCRIBING';
       }
-      if (! oMQTTw.setReceiverCallback(Receiver)) {return false;}
-      if (! oMQTTw.subscribe(topic)             ) {return false;}
-      eRecvtopic.readOnly = true;
-      eRecvstart.disabled = true;
-      eRecvstop.disabled  = false;
-      return true;
+      //
+      oSse.onmessage = (oRet) => {
+        let o,s;
+        try       {o = JSON.parse(oRet.data);                                }
+        catch (e) {console.error('Invalid data field was received.'); return;}
+        if (!('status' in o) || (typeof o.status !== 'number')) {
+          console.error('Invalid data format in data field.');
+          return;
+        }
+        if ('text' in o) {
+          s = o.text;
+        } else           {
+          console.error('data field does not have "text" property.');
+          s = '';
+        }
+        if (o.status !== 0) {
+          console.error(
+            'Server returned non-zero status: ('
+              + o.status
+              + ')'
+              + ('text' in o) ? o.text : ''
+          );
+          StopSub();
+          return;
+        }
+        Receiver(s);
+      }
+      //
+      oSse.onerror = (oRet) => {
+        if (oSse.readyState === EventSource.CONNECTING) {
+          console.log('Retry to connect...');
+          eRecvstart.value = 'Reconnecting...';
+          return;
+        }
+        if (oSse.readyState === EventSource.OPEN      ) {
+          console.log('Connecting...');
+          return;
+        }
+        if (oSse.readyState === EventSource.CLOSED    ) {
+          console.log('Disconnected');
+          StopSub();
+          return;
+        }
+        console.errpr('Unknown "readyState." Stop subscribe.');
+        StopSub();
+        return;
+      }
     }
     
     function StopSub() {
-      let topic = eRecvtopic.value;
-      if (! oMQTTw.unsubscribe(topic)) {return false;}
-      eRecvtopic.readOnly = false;
-      eRecvstart.disabled = false;
-      eRecvstop.disabled  = true;
-      return true;
+      if (typeof oSse !== 'object') {return;}
+      oSse.close();
+      oSse = undefined;
+      eProt.item(1-eProt.selectedIndex).disabled = false;
+      eAddr.readOnly                             = false;
+      ePort.readOnly                             = false;
+      ePreset.disabled                           = false;
+      eRecvtopic.readOnly                        = false;
+      eRecvstart.disabled                        = false;
+      eRecvstart.value                           = 'Start';
     }
     
     function ClearSub() {
       eRecvbox.value = '';
-    }
-    
-    function WS_warning() {
-      if ((eProt.selectedIndex==0)                                                &&
-          (location.protocol==='https:')                                          &&
-          (! eAddr.value.match(/(^|[A-Z0-9])(localhost|127\.\d+\.\d+\.\d+|::1)$/))  ) {eWSwarn.style.display='inline';return;}
-      if ( eProt.selectedIndex==1                                                   ) {eWSwarn.style.display='none'  ;return;}
     }
     
     function Preset(iNum) {
@@ -333,10 +382,8 @@
         eProt.selectedIndex = oPreset[iNum-1].prot;
         eAddr.value         = oPreset[iNum-1].host;
         ePort.value         = oPreset[iNum-1].port;
-        ePath.value         = oPreset[iNum-1].path;
         eSendtopic.value    = sPubtopic                            ;
         eRecvtopic.value    = sSubtopic                            ;
-        WS_warning(oPreset[iNum-1].prot);
       }
       ePreset.selectedIndex = 0;
     }
@@ -347,42 +394,51 @@
       oFgrp.remove();
       oFgrep=null; oFgrep = L.featureGroup();
     }
-    
   </script>
 
 
   <h2>README (What is this?):</h3>
-  <p>This is a control panel to try to use the MQTTwrapper class. This library makes your web browser an MQTT-over-WebSocket speaker. And then the protocol is <strong>very helpful to send/receive text data (also byte stream) from/to the UNIX stdin/stdout.</strong></p>
-  <p>Only one simple application is required to connect to the stdin/stdout. That is <a href="https://mosquitto.org/">"Mosquitto."</a></p>
+  <p>This is a control panel for testing the EventSource class, which is for the "Server-Sent Event (SSE)." This class is helpful for your web browser to work as an MQTT subscriber, as it enables server-push data transmission within HTTP regulations. And HTTP/2 is necessary to make the class truly practical. HTTP/2 can make HTTP data transmission both upstream and downstream more efficiently with a single connection.</strong></p>
+  <p>This control panel runs the mosquitto_pub/mosquitto_sub command in a CGI script on the web server by using the EventSource class and the fetch() method. The <a href="https://mosquitto.org/">Mosquitto</a> commands encapsulate/decapsulate MQTT data, instead of the web client, so that this page can work as not only an MQTT subscriber but also an MQTT publisher.</p>
   <p>Try to use me by the following steps.</p>
   
   <h2>How to Use Me:</h2>
-  <h3>0-1) [PREP.] Install Mosquitto</h3>
-  <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a><p>
-  <h3>0-2) [PREP.] Write the configuration for Mosquitto</h3>
-  <p>Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
-     <textarea style="width:40em; height:calc(1.3em*16); line-height:1.3;" readonly="readonly">allow_anonymous true
+  <h3>0-1) [PREP.] Install a HTTP/2 web server</h3>
+  <p>Typically, I recommend <a href="https://httpd.apache.org/">Apache</a> or <a href="https://nginx.org/">nginx</a>.<p>
+  <ul>
+    <li>Requirements for Apache:
+      <ul>
+        <li>Apache 2.4.17 or later</li>
+        <li>Built with <a href="https://www.openssl.org/">OpenSSL</a> 1.0.2 or later</li>
+        <li>Built with --enable-ssl, --enable-http2, and --with-mpm=event</li>
+        <li>LoadModule mod_ssl, mod_http2, and mod_mpm_event in httpd.conf</li>
+        <li>Add "SSLEngine on" and "Protocol h2 http/1.1" in your &lt;VirtualHost&gt; directive</li>
+      </ul>
+    </li>
+    <li>Requirements for nginx:
+      <ul>
+        <li>nginx 1.9.5 or later</li>
+        <li>Built with OpenSSL 1.0.2 or later</li>
+        <li>Built with --with-http_ssl_module and --with-http_v2_module</li>
+        <li>Add "listen 443 ssl http2" in the server block for your host</li>
+      </ul>
+    </li>
+  </ul>
+  <h3>0-2) [PREP.] Install Mosquitto</h3>
+  <p>The installation instructions are on <a href="https://mosquitto.org/download/">this page.</a>Then, Copy and save the following text as the file "mosquitto.local.conf" in your favor directory.<br/>
+     <textarea style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly">allow_anonymous true
 
 #=== Plain MQTT
 listener 1883
-protocol mqtt
-
-#=== Plain MQTT over WebSocket
-listener 8000
-protocol websockets
-
-#=== Secure MQTT over WebSocket (TLS)
-listener 8884
-protocol websockets
-certfile /PATH/TO/YOUR/certfile.pem
-keyfile  /PATH/TO/YOUR/keyfile.pem
-cafile   /PATH/TO/YOUR/cafile.pem</textarea></p>
+protocol mqtt</textarea></p>
+  <h3>0-3) [PREP.] Git clone this repository into a public web space on your web server</h3>
+  <p><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ https://github.com/ShellShoccar-jpn/MQTTwrapper.git</textarea></p>
   <h3>1) Start an MQTT broker</h3>
   <p>Type the following command on your UNIX terminal.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto -c mosquitto.local.conf</textarea></p>
-  <h3>2) Connect me to the MQTT broker</h3>
-  <p>In the "HOST" section, fill in the URL form (Specify "ws://localhost:8000/" to use the above MQTT broker, of course, it's OK to use another broker.) and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
+  <h3>2) Select the MQTT broker</h3>
+  <p>In the "HOST" section, fill in the URL form (Specify "mqtt://localhost:1883/" to use the above MQTT broker, of course, it's OK to use another broker. If you do so, replace "localhost" in the latter explanations with the other host you specified.)</p>
   <h3>3) Start subscribing</h3>
-  <p>Decide on the topic name in the "RECV" secion and type it into the "topicname" field. Then, push the "Start" button in the same section.</p>
+  <p>Move to the "RECV" section. And decide on the MQTT topic name for this trial. Next, type the topic name into the "topicname" field in this section and push the "Start" button in the same section.</p>
   <h3>4) Publish your location</h3>
   <p>Write the same topic name as the one in the "RECV" section. Next, decide on the name of your pin and type it into the "myname" field. Finally, push the "Publish my location" button in the same section. Then you can see your pin on the map.</p>
   <p>Or you can also publish the same plotting command from the publisher in the "SEND" section on this HTML. See the "Map" section for the command usage.</p>
@@ -390,13 +446,7 @@ cafile   /PATH/TO/YOUR/cafile.pem</textarea></p>
 </html>
 <!--
 LICENSES OF THE JAVASCRIPT LIBRARIES
-  MQTT.js:
-    Copyright (c) 2015-2016 MQTT.js contributors
-    Released under the MIT license https://opensource.org/licenses/mit-license.php
-  Eclipse Paho JavaScript client:
-    Copyright (c) 2015-2016 MQTT.js contributors
-    Released under the Eclipse Public License http://www.eclipse.org/legal/epl-v10.html
-  MQTTwrappter:
+  This file:
     CC0 or Unlicense
   Leaflet:
     Copyright © 2010–2023 Volodymyr Agafonkin.

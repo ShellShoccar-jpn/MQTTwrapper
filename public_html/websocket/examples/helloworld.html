@@ -2,21 +2,22 @@
 <!--
 ######################################################################
 #
-# MESSAGEBOARD.HTML:
-#   A Japanese Nostalgic Message Board (MQTTwrapper Class Demo)
+# HELLOWORLD.HTML:
+#     Education Material to Start MQTT over WebSocket Programming
 #
-# +--- <<Mess up the board with command via MQTT>> -------------------
+# +--- <<Send the "Hello, world!" via MQTT over WebSocket>> ----------
 # |
-# | This "messageboard.html" becomes an MQTT subscriber and receives
-# | some kinds of commands via MQTT to update messages on the board.
+# | This "helloworld.html" is a simple HTML program for you to first
+# | experience the MQTT over WebSocket.
 # |
-# | You may freely rewrite the content of the board. So, publish a lot
-# | of commands from your UNIX terminal to rewrite the message and mess up
-# | the message board!
+# | You can see the tutorial on the bottom of the page when you open
+# | this file with a web browser.
+# |
+# | Let's try!
 # +-------------------------------------------------------------------
 #
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-12
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-23
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -28,51 +29,14 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Japanese Nostalgic Message Board (MQTTwrapper Class Demo)</title>
+  <title>Hello, world! (MQTTwrapper Class Demo)</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <script src="../lib.js/MQTTwrapper.js">{"order":["Paho","MQTT.js"]}</script>
-  <!-- Style for the message board -->
-  <style>
-  #tablecontainer { background      : #15471D;
-                    width           : 640px;
-                    margin          : 0;
-                    padding         : 5px;               }
-  #msgboardtitle  { 
-                    margin          : 0;
-                    text-align      : center;
-                    color           : white;
-                    font-size       : xx-large;
-                  }
-  table.dengonban { border          : 0
-                    padding         : 0
-                    border-spacing  : 0
-                    width           : 100%;
-                    table-layout    : fixed;
-                    border-collapse : collapse;
-                    text-align      : center;
-                    vertical-align  : middle;
-                    color           : white;
-                    overflow        : hidden;            }
-  .posmark        { color           : #ffc0c0;
-                    font-size       : smaller;           }
-  .coltitle       { font-size       : x-large;
-                    font-family     : "Yu Gothic";
-                    border          : 1px solid white;   }
-  .msgbody        { font-size       : normal;
-                    border          : 1px solid white;   }
-  .warning        { font-size       : small;
-                    border-top      : 1px solid white;
-                    border-right    : none;
-                    border-bottom   : none;
-                    border-left     : none;              }
-  .bodyrow        { height          : 2.5em;             }
-  </style>
-  <!-- /Style for the message board -->
 </head>
 
 <body>
-  <h1>Japanese Nostalgic Message Board (MQTTwrapper Class Demo)</h1>
+  <h1>Hello, world! (MQTTwrapper Class Demo)</h1>
   <p id="which_library">(No library is wrapped...)</p>
   <p><a href="index.html">Go back to example list</a> / <a href="https://github.com/ShellShoccar-jpn/MQTTwrapper/">Go to the repository of this example on GitHub</a></p>
 
@@ -81,7 +45,7 @@
     <dl>
       <dt>URL:</dt>
       <dd>
-        <select id="prot" onchange="WS_warning()"><option>ws</option><option selected="selected">wss</option></select>://<input type="text" id="addr" value="mqtt0.usp-lab.com" size="20" />:<input type="text" id="port" value="8443" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
+        <select id="prot" onchange="WS_warning()"><option>ws</option><option>wss</option></select>://<input type="text" id="addr" value="" size="20" />:<input type="text" id="port" value="" size="5" />/<input type="text" id="path" value="" size="20" /><span id="ws_warning" style="font-size:small;color:red;display:none"><br/>You may fail to connect to it because most browsers forbid connecting to non-TLS WebSockets from HTTPS pages.</span>
       </dd>
       <dd>
         ⇧<br/>Preset ... <select id="preset_selector" onchange="Preset(this.selectedIndex)"><option value="-">(When you select one of them, I will set its URL to the above)</option></select>
@@ -91,16 +55,16 @@
     <input type="button" id="discconnectionbutton" value="Disconnect" style="width:10em" disabled="disabled" onclick="Disconnect()" />
   </div>
 
-  <h2>SEND (Behave as a Publisher):</h2>
+  <h2>SEND (Behave as a publisher):</h2>
   <div>
-    topic = <input type="text" id="sendtopic" value="dengon"   size="20" /><br/>
+    topic = <input type="text" id="sendtopic" value="" size="20" /><br/>
     <textarea id="sendbox"  style="width:40em; height:calc(1.3em*3); line-height:1.3;"></textarea><br/>
     <input type="button" id="publishbutton" value="Publish" onclick="Publish()" disabled="disabled" />
   </div>
 
-  <h2>RECV (Behave as a Subscriber):</h2>
+  <h2>RECV (Behave as a subscriber):</h2>
   <div>
-    topic = <input type="text" id="recvtopic" value="dengon" size="20" /><br/>
+    topic = <input type="text" id="recvtopic" value="" size="20" /><br/>
     <textarea id="recvbox"  style="width:40em; height:calc(1.3em*5); line-height:1.3;" readonly="readonly"></textarea><br/>
     <label><input type="checkbox" id="recvtopicname" value="1" /><span style="font-size:smaller">Include the received topic name as a prefix</span></label><br/>
     <input type="button" id="recvstart" value="Start"  style="width:7em" onclick="StartSub()" disabled="disabled" />
@@ -108,69 +72,13 @@
     <input type="button" id="recvclear" value="Clear"  style="width:7em" onclick="ClearSub()"                     />
   </div>
 
-  <h2>Message Board (Pick up from the subscriber):</h3>
-  <div id="tablecontainer">
-    <h3 id="msgboardtitle">伝言板</h3>
-    <table class="dengonban">
-      <tr>
-        <td class="posmark" style='width:15px' >&nbsp;</td>
-        <td class="posmark" style='width:75px' >a</td>
-        <td class="posmark" style='width:75px' >b</td>
-        <td class="posmark" style='width:460px'>c</td>
-      </tr>
-      <tr>
-        <td class="posmark">1</td>
-        <th id="a1" class="coltitle">月日</td>
-        <th id="b1" class="coltitle" style='border-left:none'>時分</td>
-        <th id="c1" class="coltitle" style='border-left:none'>ご用件</td>
-      </tr>
-      <tr>
-        <td class="posmark">2</td>
-        <td id="a2" class="msgbody bodyrow" style='border-top:none'>5/19</td>
-        <td id="b2" class="msgbody bodyrow" style='border-top:none;border-left:none'>11:10</td>
-        <td id="c2" class="msgbody bodyrow" style='border-top:none;border-left:none'>西新橋には先に行ってるね。by RM</td>
-      </tr>
-      <tr>
-        <td class="posmark">3</td>
-        <td id="a3" class="msgbody bodyrow" style='border-top:none'>&nbsp;</td>
-        <td id="b3" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
-        <td id="c3" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
-      </tr>
-      <tr>
-        <td class="posmark">4</td>
-        <td id="a4" class="msgbody bodyrow" style='border-top:none'>&nbsp;</td>
-        <td id="b4" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
-        <td id="c4" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
-      </tr>
-      <tr>
-        <td class="posmark">5</td>
-        <td id="a5" class="msgbody bodyrow" style='border-top:none'>&nbsp;</td>
-        <td id="b5" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
-        <td id="c5" class="msgbody bodyrow" style='border-top:none;border-left:none'>&nbsp;</td>
-      </tr>
-      <tr>
-        <td>&nbsp;</td>
-        <td colspan="3" class="warning">3日過ぎたものは消します。</td>
-      </tr>
-    </table>
-  </div>
-  <p>
-    This HTML program (re)writes the message into the message board after the above subscriber has received the following command.
-  </p>
-  <blockquote style="background-color: lightgray; width: 15em; padding: 0.25em;">write <i>xy</i> <i>msg</i></blockquote>
-  <dl>
-    <dt><i>x</i></dt><dd>Column Code: For instance, "<code>a</code>" means the date column because the column is at the leftmost and has the code "a." <strong>You have to specify with a row number in practice</strong>, like that "<code>a1</code>."</dd>
-    <dt><i>y</i></dt><dd>Row Number: For instance, "<code>1</code>" means the head line of the table because the head line is numbered one. <strong>You have to specify with a column code in practice</strong>, like that "<code>a1</code>."</dd>
-    <dt><i>msg</i></dt><dd>Message Text: You can contain space characters in the body of the text. And if you omit the whole part of the message text, the content in the corresponding cell will be erased.</dd>
-  </dl>
-
   <script src="mqttbrokers.js"></script>
   <script type="text/javascript">
     //////////////////////////////////////////////////////////////////
     // Initialize for this webpage
     //////////////////////////////////////////////////////////////////
-    const sPubtopic = 'mwexample/msgboard';
-    const sSubtopic = 'mwexample/msgboard';
+    const sPubtopic = 'mwexample/helloworld';
+    const sSubtopic = 'mwexample/helloworld';
     (function(){
       let eSel,eOpt,i;
       eSel = document.getElementById('preset_selector');
@@ -218,33 +126,6 @@
     
     
     //////////////////////////////////////////////////////////////////
-    //
-    // Parse and inject the incoming data into the chart
-    // the data format assumed the following:
-    //   * space-separated-data
-    //   * three columns
-    //     1 : "write" keyword
-    //     2 : positon (e.g. "a1")
-    //    [3]: message string
-    function parsinjector(sInData) {
-      // Parse
-      let lsInData, sPos, sMsg, s, e;
-      if (typeof sInData !== 'string') {return;}
-      sInData = sInData.replace(/\n.*$/,'');
-      if (! sInData.match(/^write +[A-Za-z][0-9]( +[^ ].*)?$/)) {return;}
-      s    = sInData.replace(/^write +/,'');
-      sPos = s.replace(/ .*$/,'').toLowerCase();
-      s    = s.replace(/^[^ ]+/,'');
-      sMsg = s.replace(/^[^ ]+ +/,'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/[']/g,'&lsquo;')                   ;
-      
-      // Write
-      e = document.getElementById(sPos);
-      if (! e) {return}
-      e.innerHTML = sMsg;
-    }
-
-    
-    //////////////////////////////////////////////////////////////////
     // Button Attached Functions
     //////////////////////////////////////////////////////////////////
     
@@ -282,7 +163,6 @@
     function Disconnect() {
       if (! oMQTTw           ) {return             ;}
       if (  oMQTTw.bConnected) {oMQTTw.disconnect();}
-      oMQTTw.disconnect();
       eProt.item(1-eProt.selectedIndex).disabled = false;
       eAddr.readOnly                             = false;
       ePort.readOnly                             = false;
@@ -307,7 +187,6 @@
                         + ((eRecvtopicname.checked)?sTopic+' : ':'')
                         + sMessage;
       eRecvbox.scrollTop = eRecvbox.scrollHeight;
-      parsinjector(sMessage+'');
     }
     
     function StartSub() {
@@ -392,10 +271,13 @@ cafile   /PATH/TO/YOUR/cafile.pem</textarea></p>
   <h3>2) Connect me to the MQTT broker</h3>
   <p>In the "HOST" section, fill in the URL form (Specify "ws://localhost:8000/" to use the above MQTT broker, of course, it's OK to use another broker.) and push the "Connect" button. Then, wait for the button name to be "CONNECTED."</p>
   <h3>3) Start subscribing</h3>
-  <p>Decide on the topic name in the "RECV" secion and type it into the "topicname" field. Then, push the "Start" button in the same section.</p>
-  <h3>4) Publish a message rewriting command</h3>
-  <p>Publish a message rewriting command on your UNIX terminal with the same topic name and to the same MQTT broker as what you specified in this HTML, like this:<br/><textarea style="width:40em; height:calc(1.3em*2); line-height:1.3;" readonly="readonly">$ echo "write c3 I'll be back soon." | mosquitto_pub -l -h HOSTNAME -t "TOPICNAME"</textarea><br/>Then you can see the message you published on the message board.</p>
-  <p>Or you can also publish the same rewriting command from the publisher in the "SEND" section on this HTML.</p>
+  <p>First, decide on the MQTT topic name for this trial. Next, type the topic name into the "topicname" field in the "RECV" section and push the "Start" button in the same section. And also, type the following command on your UNIX terminal.<br/><textarea style="width:40em; height:1.3em; line-height:1.3;" readonly="readonly">$ mosquitto_sub -h localhost -t "TOPIC"</textarea><br/>"TOPIC" is the topic name you already decided on. And you have to specify the same MQTT broker instead of "localhost" if you are connecting to a different broker from what you specified on this HTML control panel.</p>
+  <h3>4) Publish a message</h3>
+  <p>Let's try to send messages between the web browser and thr UNIX terminal each other, by the following ways.</p>
+  <dl>
+    <dt>UNIX to Web</dt><dd>Type the following command on your UNIX terminal.<br/><textarea style="width:36em; height:1.3em; line-height:1.3;" readonly="readonly">$ echo "Hello, world!" | mosquitto_pub -l -h localhost -t "TOPIC"</textarea><br/>("TOPIC" is the topic name you already decided on. And you have to specify the same MQTT broker instead of "localhost" if you are connecting to a different broker from what you specified on this HTML control panel.) You must be able to see the "Hello, world!" message in the "RECV" section.</dd>
+    <dt>Web to UNIX</dt><dd>Write the topic name you already decided on into the "topicname" field in the "SEND" section. And also, write the "Hello, world!" message into the message field under the "topicname." Then, push the "Publish" button. So, you must be able to see the same message on your UNIX terminal!</dd>
+  </dl>
 </body>
 </html>
 <!--

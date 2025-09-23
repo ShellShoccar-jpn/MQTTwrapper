@@ -1,16 +1,136 @@
-# MQTTwrapper
+# MQTTwrapper and MQTT via HTTP/2
 
-A Redundant MQTT JavaScript Library Wrapper with MQTT.js and Paho
+These are solutions and implementations that enable a web browser to act as both an MQTT publisher and subscriber. Initially, a web browser is a client-pull data receiving tool, which can only receive data when the browser requests it, so it cannot always get fresh data. On the other hand, the MQTT is based on the publish-subscribe pattern and its clients can receive fresh data that has just been generated.
 
-## WHAT IS THIS
+To introduce the pub/sub transmission into web browsers, two protocols were invented. They are called "WebSocket" and "Server-Sent Events." WebSocket is the smarter solution because both the web server and the client can send data spontaneously. However, it also has a weak point, which a few networks can overcome, as WebSocket does not have complete compatibility with HTTP. In comparison, Server-Sent Events is a type of HTTP function and can pass through HTTP networks without any problem. But it supports only server-to-client direction, and you have to use the classic HTTP POST method for upstream. To reduce such inefficiency, HTTP/2 is regularly used in that case.
+
+So, I offer you two solutions and their implementations.
+
+* ["MQTTwapper"](#a-mqttwapper): A redundant MQTT JavaScript library wrapper with MQTT.js and Paho. These two libraries are implementations of the "MQTT over WebSocket"
+* ["MQTT via HTTP/2"](#b-mqtt-via-http2): A solution for web browsers to do MQTT bi-directional transmission by SSE and HTTP/2
+
+
+## CONTENTS OF THIS PACKAGE
+
+This package contains the following files and directories.
+
+```
+./
+|-- README.md ........................ This file
+|-- LICENSE .......................... License information for this package
+|
+|-- public_html/ ..................... Directory for public web space
+|   |                                  - It contains Javascript library files,
+|   |                                    CGI scripts, and example HTML files.
+|   |                                  - If you want to put this package on a
+|   |                                    web server, we recommend you publish
+|   |                                    only the files in this directory.
+|   |                                  - Of course, unnecessary to care about it
+|   |                                    if you put this package within your
+|   |                                    local computer.
+|   |
+|   |-- sse/                           Demo files for "MQTT via HTTP/2"
+|   |   |
+|   |   |-- cgi/ ..................... CGI scripts written in shell script
+|   |   |   |
+|   |   |   |-- mqtt_via_http_down.cgi "mosquitto_sub" wrapper with SSE
+|   |   |   `-- mqtt_via_http_up.cgi . "mosquitto_pub" wrapper with HTTP POST
+|   |   |
+|   |   `-- examples/ ................ Directory for "MQTT via HTTP/2" examples
+|   |       |
+|   |       |-- index.html ........... Just a menu for the following examples
+|   |       |
+|   |       |-- helloworld.html ...... "Hello, world!" example (Try it first!)
+|   |       |-- messageboard.html .... "Japanese Nostalgic Message Board" example
+|   |       |                           (DOM operation)
+|   |       |-- realtimechart.html ... "Realtime Chart" example
+|   |       |                           (using the Chart.js library)
+|   |       |-- mapworm.html ......... "Map Worm" example 
+|   |       |                           (using the Leaflet library)
+|   |       |-- whereareweat.html .... "Where are we at?" example
+|   |       |                           (using Geo API and the Leaflet library)
+|   |       |
+|   |       `-- mqttbrokers.js ....... Public MQTT broker list;
+|   |                                  It is loaded by the above examples.
+|   |
+|   `-- websocket/                     Demo files for "MQTTwrapper"
+|       |
+|       |-- lib.js/ .................. Directory for library files
+|       |   |
+|       |   `-- MQTTwrapper.js ....... The "MQTTwrapper Class Library" file
+|       |
+|       `-- examples/ ................ Directory for the "MQTTwrapper" class
+|           |                          examples
+|           |
+|           |-- index.html ........... Just a menu for the following examples
+|           |
+|           |-- helloworld.html ...... "Hello, world!" example (Try it first!)
+|           |-- messageboard.html .... "Japanese Nostalgic Message Board" example
+|           |                           (DOM operation)
+|           |-- realtimechart.html ... "Realtime Chart" example
+|           |                           (using the Chart.js library)
+|           |-- mapworm.html ......... "Map Worm" example 
+|           |                           (using the Leaflet library)
+|           |-- whereareweat.html .... "Where are we at?" example
+|           |                           (using Geo API and the Leaflet library)
+|           |
+|           `-- mqttbrokers.js ....... Public MQTT broker list;
+|                                      It is loaded by the above examples.
+|
+`-- sh_for_examples/ ................. Directory for shell scripts to help the
+    |                                  above examples
+    |
+    |-- dummy_chart.sh ............... Dummy data generator for the
+    |                                  "Realtime Chart" examples
+    |
+    |-- mapworm.sh ................... Sample coordinates publisher for the
+    |                                  "Map Worm" examples
+    |
+    `-- mapworm.data/ ................ Directory for sample coordinates files
+```
+
+
+## A. MQTTwapper
 
 This library is to make the MQTT libraries ["MQTT.js"](https://github.com/mqttjs/MQTT.js) and ["Paho"](https://www.eclipse.org/paho/index.php?page=clients/js/index.php) more robust. If you use this library instead of them, your program can get longer life than the two libraries because this library works as a wrapper choosing available one of them. If one of them gets unavailable, this wrapper loads the other one.
 
-## FIRST, TRY THE "Hello, world!" EXAMPLE
+The network configuration when you use the above libraries is as follows:
 
-The best way to understand what the library is and how easy to use is to try the "Hello, world!" example first! Just after you have done "git clone" me, open the "./public_html/examples/helloworld.html" with a web browser. Then try each step written in the "How to Use Me" section on the HTML document.
+```
+     +------------------------------------------------+        +---------------+
+     |                                                ---------> Other MQTT    |
+     |     MQTT broker (with WebSocket support)       |        | Publishers    |
+     |                                                <--------- / Subscribers |
+     +-------------!--------------------A-------------+        +---------------+
+         [.........!....................!.........]
+         [.........!MQTT................!MQTT.....] WebSocket
+         [.........!subscribe...........!publish..] tunnel
+         [.........!....................!.........](TCP #8083 etc.)
+         [.........!....................!.........]
++------------------!--------------------!------------------+
+| Web Browser      !                    !                  |
+|                  !                    |                  |
+|                  !                    !                  |
+|                  !                    !                  |
+|                  V                    !                  |
+|   +---------------------+      +---------------------+   |
+|   | (MQTTwrapper class) |      | (MQTTwrapper class) |   |
+|   |setReceiverCallback()|      |      publish()      |   |
+|   +---------------------+      +---------------------+   |
+|                  :                    A                  |
+|                  V                    :                  |
+|     display the message             push a button        |
+|                                                          |
++----------------------------------------------------------+
+```
 
-## HOW TO USE THIS LIBRARY
+An MQTT broker (that supports WebSocket) and one of the libraries make a single WebSocket connection directly, without any web servers. Both sides of the WebSocket nodes can send data spontaneously. Therefore, the WebSocket can function as a tunnel for MQTT packets. In other words, the native MQTT packets are encapsulated in the WebSocket payload. Then, every method on the broker and the browser encapsulates/decapsulates the MQTT packets and data.
+
+### First, try the "Hello, world!" example
+
+The best way to understand what the library is and how easy to use is to try the "Hello, world!" example first! Just after you have done "git clone" me, open the "./public_html/websocket/examples/helloworld.html" with a web browser. Then try each step written in the "How to Use Me" section on the web page.
+
+### How to use the library
 
 Now that you know this library, we will tell you how to use this library in your web programs.
 
@@ -69,48 +189,7 @@ if (client) {
 
 See the reference section for detail.
 
-## CONTENTS OF THIS PACKAGE
-
-This package contains the following files and directories.
-
-```
-./
-|-- README.md .................. This file
-|-- LICENSE .................... License information for this package
-|
-|-- public_html/ ............... Directory you may publish with a web browser
-|   |                            - It contains the library file and example HTML files.
-|   |                            - If you want to put this package on a web server,
-|   |                              we recommend you publish only the files in this
-|   |                              directory.
-|   |                            - Of course, unnecessary to care about it if you
-|   |                              put this package within your local computer.
-|   |
-|   |-- lib.js/ ................ Directory for library files
-|   |   |
-|   |   `-- MQTTwrapper.js ..... The "MQTTwrapper Class Library" file
-|   |
-|   `-- examples/ .............. Directory for examples to understand the library
-|       |
-|       |-- index.html ......... Just a Link HTML file for the following examples
-|       |
-|       |-- helloworld.html .... "Hello, world!" example (Try it first!)
-|       |-- messageboard.html .. "Japanese Nostalgic Message Board" example (DOM operation)
-|       |-- realtimechart.html . "Realtime Chart" example (using the Chart.js library)
-|       |-- mapworm.html ....... "Map Worm" example (using the Leaflet library)
-|       |-- whereareweat.html .. "Where are we at?" example (using Geo API and the Leaflet library)
-|       |
-|       `-- mqttbrokers.js ..... Public MQTT broker list; It is loaded by the above examples.
-|
-`-- sh_for_examples/ ........... Directory for shell scripts to help the above examples
-    |
-    |-- dummy_chart.sh ......... Dummy data generator for the "Realtime Chart" examples
-    |
-    |-- mapworm.sh ............. Sample coordinates publisher for the "Map Worm" examples
-    `-- mapworm.data/ .......... Directory for sample coordinates files
-```
-
-## REFERENCE ("MQTTwrapper" Class)
+### REFERENCE ("MQTTwrapper" Class)
 
 ```
 * <Property,static> sLibname
@@ -315,6 +394,69 @@ This package contains the following files and directories.
             This property MUST BE a readonly one. So you MUST NOT
             write the new status into it.
 ```
+
+## B. MQTT via HTTP/2
+
+This is our solution for bi-directional MQTT transmission in HTTP compliance. The basic idea is that.
+
+```
+     +------------------------------------------------+        +---------------+
+     |                                                ---------> Other MQTT    |
+     |                   MQTT broker                  |        | Publishers    |
+     |                                                <--------- / Subscribers |
+     +------|---------------------------A-------------+        +---------------+
+            |                           |
+            |subscribe                  |publish
+            |(MQTT #1883)               |(MQTT #1883)
+            |                           |
++-----------|---------------------------|------------------+
+|           |            Web Server     |                  |
+|           V                           |                  |
+|  +------------------------+  +------------------------+  |
+|  |     mosquitto_sub      |  |     mosquitto_pub      |  |
+|  |      wrapper CGI       |  |      wrapper CGI       |  |
+|  |"mqtt_via_http_down.cgi"|  | "mqtt_via_http_up.cgi" |  |
+|  +------------------------+  +------------------------+  |
+|           !                           A                  |
++-----------!---------------------------!------------------+
+      [.....!...........................!............]
+      [.....!.Server....................!............]  HTTP/2
+      [.....!..-Sent....................!.POST.......]  tunnel
+      [.....!.Events....................!.Method.....] (HTTPS #443)
+      [.....!(countinuous)..............!(one-shot)..]
+      [.....!...........................!............]
++-----------!---------------------------!------------------+
+|           !            Web Browser    !                  |
+|           V                           !                  |
+|   +---------------------+      +---------------------+   |
+|   | (EventSource class) |      |  (fetch() method )  |   |
+|   +---------------------+      +---------------------+   |
+|           :                           A                  |
+|           V                           :                  |
+|     display the message          push a button           |
+|                                                          |
++----------------------------------------------------------+
+```
+
+### Server-to-Browser Path (leftside in the figure)
+
+There are two challenges for web browsers to become an MQTT subscriber. First, how to speak the MQTT protocol, and second, how to do server-push data receiving in HTTP compliance.
+ To address the first challenge, the web browser uses a CGI mechanism to request the web server to execute the "mosquitto_sub" command. For the second challenge, the web browser uses the EventSource class to request the server to deliver data via Server-Sent Events.
+
+### Browser-to-Server Path (rightside in the figure)
+
+There is a similar issue with the server-to-browser path as well. That is how to speak the MQTT protocol. Therefore, the web browser utilizes a CGI mechanism by calling the fetch() method to request that the web server execute the "mosquitto_pub" command.
+
+### To Reduce the HTTP Costs
+
+The Server-Sent Events keep the HTTP connection during the MQTT subscription. On the other hand, the fetch() method requires a new HTTP connection for every new message it sends. Both ways require high costs. To make those data transmissions practical, HTTP/2 is necessary.
+
+HTTP/2 can work like a kind of tunnel for traditional HTTP connections. More precisely, a single TCP connection for HTTP/2 can multiplex multiple traditional HTTP connections, each represented as a separate stream. Therefore, HTTP/2 is practically required to make a web browser an MQTT client. And moreover, TLS is also practically required for HTTP/2 because most modern web browsers refuse to enable HTTP/2 over non-TLS connection by security reasons.
+
+### Try the "Hello, world!" example
+
+The best way to understand the solution is and how easy to use is to try the "Hello, world!" example! Just after you have done "git clone" me, open the "./public_html/sse/examples/helloworld.html" with a web browser. Then try each step written in the "How to Use Me" section on the web page.
+
 
 ## LICENSE
 

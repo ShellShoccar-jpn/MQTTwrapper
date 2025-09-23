@@ -32,7 +32,7 @@
 #   However, you can change them with the "-h" and "-t" options.
 #
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2023-07-23
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2025-09-24
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -85,7 +85,7 @@ fi
 
 # === Initialize parameters ==========================================
 mqttbroker='localhost'
-mqtttopic='hwexample/mapworm'
+mqtttopic='mwexample/mapworm'
 
 # === Read options ===================================================
 while [ $# -gt 0 ]; do
