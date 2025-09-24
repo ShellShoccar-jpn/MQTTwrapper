@@ -6,7 +6,7 @@ To introduce the pub/sub transmission into web browsers, two protocols were inve
 
 So, I offer you two solutions and their implementations.
 
-* ["MQTTwapper"](#a-mqttwapper): A redundant MQTT JavaScript library wrapper with MQTT.js and Paho. These two libraries are implementations of the "MQTT over WebSocket"
+* ["MQTTwrapper"](#a-mqttwrapper): A redundant MQTT JavaScript library wrapper with MQTT.js and Paho. These two libraries are implementations of the "MQTT over WebSocket"
 * ["MQTT via HTTP/2"](#b-mqtt-via-http2): A solution for web browsers to do MQTT bi-directional transmission by SSE and HTTP/2
 
 
@@ -90,7 +90,7 @@ This package contains the following files and directories.
 ```
 
 
-## A. MQTTwapper
+## A. MQTTwrapper
 
 This library is to make the MQTT libraries ["MQTT.js"](https://github.com/mqttjs/MQTT.js) and ["Paho"](https://www.eclipse.org/paho/index.php?page=clients/js/index.php) more robust. If you use this library instead of them, your program can get longer life than the two libraries because this library works as a wrapper choosing available one of them. If one of them gets unavailable, this wrapper loads the other one.
 
