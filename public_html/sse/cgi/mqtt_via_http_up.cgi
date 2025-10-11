@@ -6,12 +6,13 @@
 #
 # See also for the Server-Sent Event protocol:
 #
-# Written by @colrichie on 2025-09-16
+# Written by @colrichie on 2025-10-11
 #
 ######################################################################
 
 
 # ===== Init =========================================================
+
 http_exit() {
   cat <<-HTTP_RES
 	Status: ${1:-}

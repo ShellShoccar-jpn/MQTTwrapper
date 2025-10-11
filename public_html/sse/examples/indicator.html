@@ -1,0 +1,118 @@
+<!DOCUMENT html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MQTT Indicator</title>
+</head>
+
+<body>
+<h1>MQTT Indicator</h1>
+<dl>
+  <dt>Broker:</dt><dd id="host" >localhost</dd>
+  <dt>Port:</dt  ><dd id="port" >1883</dd>
+  <dt>Topic:</dt ><dd id="topic">test/my_indicator</dd>
+  <dt>Control Panel:</dt>
+  <dd>
+    <input type="button" value="Start sub." id="start"
+           onclick="StartSubscribing()"                    >
+    <input type="button" value="Stop sub."  id="stop"
+           onclick="StopSubscribing()"  disabled="disabled">
+  </dd>
+  <dt>Indicator:</dt>
+  <dd>
+    <label>
+      <input type="radio" name="indicator" value="1" id="on">
+      <span style="color:red  ;font-weight:bold">ON</span>
+    </label>
+    <label>
+      <input type="radio" name="indicator" value="0" id="off">
+      <span style="color:green;font-weight:bold">OFF</span>
+    </label>
+  </dd>
+<dl>
+<ul>
+  <li>Turn "ON" when "ON" keyword arrived</li>
+  <li>Turn "OFF" when "OFF" keyword arrived</li>
+  <li>Disappear when neither of them</li>
+</ul>
+
+<script>
+//--- Initial Settings ------------------------------------------
+
+const host  = document.getElementById('host' ).innerText;
+const port  = document.getElementById('port' ).innerText;
+const topic = document.getElementById('topic').innerText;
+let   evsrc;
+
+//--- Event Functions -------------------------------------------
+
+function TurnTheIndicator(str) {
+  radio=document.getElementsByName('indicator');
+  if        (str.match(/^on$/i) ) {radio[0].checked=true ;
+  } else if (str.match(/^off$/i)) {radio[1].checked=true ;
+  } else                          {radio[0].checked=false;
+                                   radio[1].checked=false;}
+}
+
+function StartSubscribing() {
+  document.getElementById('start').disabled=true ;
+  evsrc = new EventSource(
+    '../cgi/mqtt_via_http_down.cgi'      +
+    "?host="   + encodeURIComponent(host)+
+    "&port="  + encodeURIComponent(port) +
+    "&topic=" + encodeURIComponent(topic)
+  );
+  evsrc.onopen = (o) => {
+    console.log('Subscribing has started');
+  }
+  evsrc.onmessage = (res) => {
+    let ret;
+    try {
+      ret = JSON.parse(res.data);
+      if (ret.status !== 0) {
+        throw new Error("Bad Response");
+      }
+      if (typeof ret.text === 'undefined') {
+        throw new Error("Bad Data");
+      }
+      TurnTheIndicator(ret.text);
+    } catch (err) {
+      console.log(err.message);
+    }
+  }
+  evsrc.onerror = (res) => {
+    if (evsrc.readyState === EventSource.CONNECTING) {
+      console.log('Retry to connect...');
+      return;
+    }
+    if (evsrc.readyState === EventSource.OPEN      ) {
+      console.log('Connecting...');
+      return;
+    }
+    if (evsrc.readyState === EventSource.CLOSED    ) {
+      console.log('Disconnected');
+      StopSub();
+      return;
+    }
+    console.error('Unknown "readyState." Stop subscribe.');
+    StopSub();
+    return;
+  }
+  document.getElementById('start').disabled=true ;
+  document.getElementById('stop' ).disabled=false;
+  console.log('Start subscribing');
+}
+
+function StopSubscribing() {
+  if (evsrc) {
+    evsrc.close();
+    evsrc = undefined;
+  }
+  document.getElementById('start').disabled=false;
+  document.getElementById('stop' ).disabled=true ;
+  console.log('Stop subscribing');
+}
+</script>
+
+</body>
+</html>

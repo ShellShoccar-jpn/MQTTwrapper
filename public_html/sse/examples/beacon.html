@@ -1,0 +1,71 @@
+<!DOCUMENT html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MQTT Beacon</title>
+</head>
+
+<body>
+<h1>MQTT Beacon</h1>
+<dl>
+  <dt>Broker:</dt><dd id="host" >localhost</dd>
+  <dt>Port:</dt  ><dd id="port" >1883</dd>
+  <dt>Topic:</dt ><dd id="topic">test/my_beacon</dd>
+  <dt>Control Panel:</dt>
+  <dd>
+    <input type="button" value="Start" id="start"
+           onclick="StartBeacon()"                    >
+    <input type="button" value="Stop"  id="stop"
+           onclick="StopBeacon()"  disabled="disabled">
+  </dd>
+<dl>
+
+<script>
+//--- Initial Settings ------------------------------------------
+
+const host  = document.getElementById('host' ).innerText;
+const port  = document.getElementById('port' ).innerText;
+const topic = document.getElementById('topic').innerText;
+let   intID = null;
+
+//--- Event Functions -------------------------------------------
+
+async function SendCurrenttime() {
+  let str = "host="   + encodeURIComponent(host)         +
+            "&port="  + encodeURIComponent(port)         +
+            "&topic=" + encodeURIComponent(topic)        +
+            "&text="  + encodeURIComponent(new Date()+'');
+  try {
+    const res = await fetch('../cgi/mqtt_via_http_up.cgi', {
+      method : 'POST',
+      headers: {'Content-Type':
+                'application/x-www-form-urlencoded'},
+      body   : str
+    });
+    if (!res.ok) {throw new Error("CGI POST Error");}
+    const msg = await res.text();
+    if (JSON.parse(msg).status !== 0) {
+      throw new Error("Bad Response");
+    }
+  } catch (err) {
+    console.log(err.message);
+  }
+}
+
+function StartBeacon() {
+  intID=setInterval(SendCurrenttime,1000);
+  document.getElementById('start').disabled=true ;
+  document.getElementById('stop' ).disabled=false;
+  console.log('Start beaconing');
+}
+
+function StopBeacon()  {
+  if(intID){clearInterval(intID);}
+  document.getElementById('start').disabled=false;
+  document.getElementById('stop' ).disabled=true ;
+  console.log('Stop beaconing');
+}
+</script>
+
+</body>
+</html>
