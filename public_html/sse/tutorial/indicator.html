@@ -8,9 +8,10 @@
 <body>
 <h1>MQTT Indicator</h1>
 <dl>
-  <dt>Broker:</dt><dd id="host" >localhost</dd>
-  <dt>Port:</dt  ><dd id="port" >1883</dd>
-  <dt>Topic:</dt ><dd id="topic">test/my_indicator</dd>
+  <dt>CGI-URL:</dt><dd id="url"  >../cgi/mqtt_via_http_down.cgi</dd>
+  <dt>Broker:</dt ><dd id="host" >localhost</dd>
+  <dt>Port:</dt   ><dd id="port" >1883</dd>
+  <dt>Topic:</dt  ><dd id="topic">test/my_indicator</dd>
   <dt>Control Panel:</dt>
   <dd>
     <input type="button" value="Start sub." id="start"
@@ -39,6 +40,7 @@
 <script>
 //--- Initial Settings ------------------------------------------
 
+const url   = document.getElementById('url'  ).innerText;
 const host  = document.getElementById('host' ).innerText;
 const port  = document.getElementById('port' ).innerText;
 const topic = document.getElementById('topic').innerText;
@@ -56,9 +58,8 @@ function TurnTheIndicator(str) {
 
 function StartSubscribing() {
   document.getElementById('start').disabled=true ;
-  evsrc = new EventSource(
-    '../cgi/mqtt_via_http_down.cgi'      +
-    "?host="   + encodeURIComponent(host)+
+  evsrc = new EventSource(url            +
+    "?host="  + encodeURIComponent(host) +
     "&port="  + encodeURIComponent(port) +
     "&topic=" + encodeURIComponent(topic)
   );

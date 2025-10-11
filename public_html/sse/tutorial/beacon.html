@@ -8,9 +8,10 @@
 <body>
 <h1>MQTT Beacon</h1>
 <dl>
-  <dt>Broker:</dt><dd id="host" >localhost</dd>
-  <dt>Port:</dt  ><dd id="port" >1883</dd>
-  <dt>Topic:</dt ><dd id="topic">test/my_beacon</dd>
+  <dt>CGI-URL:</dt><dd id="url" >../cgi/mqtt_via_http_up.cgi</dd>
+  <dt>Broker:</dt ><dd id="host">localhost</dd>
+  <dt>Port:</dt   ><dd id="port" >1883</dd>
+  <dt>Topic:</dt  ><dd id="topic">test/my_beacon</dd>
   <dt>Control Panel:</dt>
   <dd>
     <input type="button" value="Start" id="start"
@@ -23,6 +24,7 @@
 <script>
 //--- Initial Settings ------------------------------------------
 
+const url   = document.getElementById('url'  ).innerText;
 const host  = document.getElementById('host' ).innerText;
 const port  = document.getElementById('port' ).innerText;
 const topic = document.getElementById('topic').innerText;
@@ -36,7 +38,7 @@ async function SendCurrenttime() {
             "&topic=" + encodeURIComponent(topic)        +
             "&text="  + encodeURIComponent(new Date()+'');
   try {
-    const res = await fetch('../cgi/mqtt_via_http_up.cgi', {
+    const res = await fetch(url, {
       method : 'POST',
       headers: {'Content-Type':
                 'application/x-www-form-urlencoded'},
