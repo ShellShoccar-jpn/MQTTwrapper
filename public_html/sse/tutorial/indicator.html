@@ -8,7 +8,7 @@
 <body>
 <h1>MQTT Indicator</h1>
 <dl>
-  <dt>CGI-URL:</dt><dd id="url"  >../cgi/mqtt_via_http_down.cgi</dd>
+  <dt>CGI-URL:</dt><dd id="url"  >../cgi/mqtt_via_http_down1.cgi</dd>
   <dt>Broker:</dt ><dd id="host" >localhost</dd>
   <dt>Port:</dt   ><dd id="port" >1883</dd>
   <dt>Topic:</dt  ><dd id="topic">test/my_indicator</dd>
@@ -86,17 +86,13 @@ function StartSubscribing() {
       console.log('Retry to connect...');
       return;
     }
-    if (evsrc.readyState === EventSource.OPEN      ) {
-      console.log('Connecting...');
-      return;
-    }
     if (evsrc.readyState === EventSource.CLOSED    ) {
       console.log('Disconnected');
-      StopSub();
+      StopSubscribing();
       return;
     }
     console.error('Unknown "readyState." Stop subscribe.');
-    StopSub();
+    StopSubscribing();
     return;
   }
   document.getElementById('start').disabled=true ;
